@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 🚀 JetBase
 
 **Plataforma de transformación y visualización de datos.**  
@@ -58,7 +57,7 @@ JetBase/
 ## 🧪 Cómo correr el proyecto (local)
 
 ### 1. Clonar el repositorio
-```bash
+
 git clone https://github.com/TU_USUARIO/JetBase.git
 cd JetBase
 
@@ -184,4 +183,4 @@ Abrir http://localhost:8000/docs → Documentación automática de la API.
 
 Autor
 Alex Quejada
->>>>>>> 18d55266e4f1563527dce729cba0743f5636e44a
+
