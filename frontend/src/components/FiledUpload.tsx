@@ -42,7 +42,15 @@ const FileUpload: React.FC = () => {
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold mb-4">📂 Subir archivo</h2>
+      <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="12" y1="18" x2="12" y2="12" />
+          <line x1="9" y1="15" x2="15" y2="15" />
+        </svg>
+        Subir archivo
+      </h2>
       <div className="mb-4">
         <input
           type="file"
@@ -75,7 +83,7 @@ const FileUpload: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {preview.preview?.slice(0, 5).map((row: any, idx: number) => (
+                {preview.preview?.map((row: any, idx: number) => (
                   <tr key={idx} className="hover:bg-gray-50">
                     {preview.columns.map((col: string) => (
                       <td key={col} className="border px-3 py-2">{row[col]}</td>

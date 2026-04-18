@@ -70,7 +70,7 @@ const Sidebar: React.FC = () => {
 
 
     return (
-        <div className="flex h-screen w-64 flex-col bg-gray-900 px-3 py-4">
+        <div className="flex h-full w-64 flex-col bg-gray-900 px-3 py-4 overflow-y-auto flex-shrink-0">
 
             {/* Main nav */}
             <nav className="flex flex-col gap-0.5">

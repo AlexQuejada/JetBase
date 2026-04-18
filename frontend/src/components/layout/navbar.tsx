@@ -2,7 +2,7 @@ import React from 'react';
 
 const Navbar: React.FC = () => {
     return (
-        <nav className="bg-gray-900 text-white px-6 py-4 shadow-md">
+        <nav className="bg-gray-900 text-white px-6 py-4 shadow-md flex-shrink-0">
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1">
                     <img src="/jet-militar.png" alt="JetBase" className="h-8 w-8" />
