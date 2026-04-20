@@ -75,3 +75,45 @@ class MergeResponse(BaseModel):
     columns: List[str]
     schema_validation: SchemaValidation
     preview: List[Dict[str, Any]]
+
+
+# ============ Dashboard Schemas ============
+
+class ColumnInfo(BaseModel):
+    """Información de una columna para el dashboard."""
+    name: str
+    type: str
+    sample_values: List[str]
+    null_count: int
+    unique_count: int
+    available_metrics: List[str]
+    available_charts: List[str]
+    stats: Optional[Dict[str, Any]] = None
+
+
+class DashboardAnalyzeResponse(BaseModel):
+    """Respuesta de análisis de columnas para dashboard."""
+    filename: str
+    total_rows: int
+    total_columns: int
+    columns: List[ColumnInfo]
+
+
+class DashboardMetricResponse(BaseModel):
+    """Respuesta de cálculo de métrica para dashboard."""
+    success: bool
+    column: str
+    column_type: str
+    metric: str
+    group_by: Optional[str]
+    filter: Optional[Dict[str, str]]
+    result: Any
+
+
+class DashboardValidationResponse(BaseModel):
+    """Respuesta de validación de configuración de gráfico."""
+    valid: bool
+    message: str
+    column: str
+    metric: str
+    chart_type: str
