@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useData } from '../context/DataContext';
 
 const FileMerge: React.FC = () => {
+    const { setProcessedData } = useData();
     const [files, setFiles] = useState<FileList | null>(null);
     const [preview, setPreview] = useState<any>(null);
     const [loading, setLoading] = useState(false);
@@ -51,6 +53,18 @@ const FileMerge: React.FC = () => {
             const res = await axios.post('http://localhost:8000/api/v1/data/merge', formData);
             setPreview(res.data);
             console.log('Archivos combinados:', res.data);
+
+            // Guardar datos procesados en el contexto para el dashboard
+            setProcessedData({
+                filename: res.data.files.map((f: any) => f.filename).join(', '),
+                columns: res.data.columns,
+                preview: res.data.preview,
+                transformed_rows: res.data.transformed_rows,
+                original_rows: res.data.original_rows,
+                columnTypes: Object.fromEntries(
+                    res.data.columns.map((col: string) => [col, 'unknown'])
+                )
+            });
         } catch (err) {
             console.error('Error al combinar:', err);
             alert('Error al combinar los archivos');

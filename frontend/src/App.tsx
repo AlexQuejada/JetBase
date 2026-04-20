@@ -1,17 +1,20 @@
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/layout/layout';
-import FileUpload from './components/FiledUpload';
-import FileMerge from './components/FileMerge';
+import TransformPage from './pages/TransformPage';
+import DashboardPage from './pages/DashboardPage';
 
 function App() {
   return (
-    <Layout>
-      <div className="space-y-6">
-        <FileUpload />
-        <hr className="my-6" />
-        <FileMerge />
-      </div>
-    </Layout>
+    <Router>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Navigate to="/transform" />} />
+          <Route path="/transform" element={<TransformPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+        </Routes>
+      </Layout>
+    </Router>
   );
 }
 
