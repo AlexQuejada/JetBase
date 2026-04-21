@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useData } from '../context/DataContext';
 
 const FileMerge: React.FC = () => {
-    const { setProcessedData } = useData();
+    const { processedData, setProcessedData, clearProcessedData } = useData();
     const [files, setFiles] = useState<FileList | null>(null);
     const [preview, setPreview] = useState<any>(null);
     const [loading, setLoading] = useState(false);
@@ -15,11 +15,74 @@ const FileMerge: React.FC = () => {
     const [normalizeWhitespace, setNormalizeWhitespace] = useState(true);
     const [keep, setKeep] = useState('first');
     const [downloadFormat, setDownloadFormat] = useState('csv');
+    const [hasChanges, setHasChanges] = useState(false);
+
+    // Estado para edición inline
+    const [editingCell, setEditingCell] = useState<{ row: number; col: string } | null>(null);
+    const [editValue, setEditValue] = useState('');
+
+    // Al montar, solo mostramos datos si vienen del módulo de merge
+    useEffect(() => {
+        if (processedData && processedData.source === 'merge') {
+            setPreview({
+                files_processed: processedData.filename.split(',').length,
+                original_rows: processedData.original_rows,
+                transformed_rows: processedData.transformed_rows,
+                columns: processedData.columns,
+                preview: processedData.preview,
+                message: 'Datos cargados desde sesión anterior',
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             setFiles(e.target.files);
         }
+    };
+
+    // Funciones para edición inline
+    const startEditing = (rowIdx: number, col: string, value: any) => {
+        setEditingCell({ row: rowIdx, col });
+        setEditValue(value?.toString() || '');
+    };
+
+    const saveEdit = () => {
+        if (!editingCell || !preview) return;
+
+        const newPreview = [...preview.preview];
+        newPreview[editingCell.row] = {
+            ...newPreview[editingCell.row],
+            [editingCell.col]: editValue
+        };
+
+        setPreview({
+            ...preview,
+            preview: newPreview
+        });
+        setHasChanges(true);
+        setEditingCell(null);
+    };
+
+    const cancelEdit = () => {
+        setEditingCell(null);
+        setEditValue('');
+    };
+
+    const saveChangesToContext = () => {
+        if (!preview || !hasChanges) return;
+
+        setProcessedData({
+            filename: preview.files.map((f: any) => f.filename).join(', '),
+            columns: preview.columns,
+            preview: preview.preview,
+            transformed_rows: preview.preview.length,
+            original_rows: preview.original_rows,
+            columnTypes: processedData?.columnTypes || {},
+            source: 'merge',
+        });
+        setHasChanges(false);
     };
 
     const handleMerge = async () => {
@@ -63,7 +126,8 @@ const FileMerge: React.FC = () => {
                 original_rows: res.data.original_rows,
                 columnTypes: Object.fromEntries(
                     res.data.columns.map((col: string) => [col, 'unknown'])
-                )
+                ),
+                source: 'merge',
             });
         } catch (err) {
             console.error('Error al combinar:', err);
@@ -247,7 +311,36 @@ const FileMerge: React.FC = () => {
             {preview && (
                 <div className="mt-6">
                     <div className="flex flex-wrap items-center justify-between mb-4">
-                        <h3 className="font-semibold text-lg">Resultado combinado</h3>
+                        <h3 className="font-semibold text-lg">Resultado combinado (editable)</h3>
+                        <div className="flex items-center gap-3">
+                            {hasChanges && (
+                                <button
+                                    onClick={saveChangesToContext}
+                                    className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition flex items-center gap-1"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Guardar cambios
+                                </button>
+                            )}
+                            <button
+                                onClick={() => {
+                                    clearProcessedData();
+                                    setPreview(null);
+                                    setFiles(null);
+                                    setHasChanges(false);
+                                }}
+                                className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Limpiar datos
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between mb-4">
                         <div className="flex gap-2 items-center">
                             <select
                                 value={downloadFormat}
@@ -270,8 +363,10 @@ const FileMerge: React.FC = () => {
                         <strong>Archivos procesados:</strong> {preview.files_processed} |
                         <strong> Filas originales:</strong> {preview.original_rows} |
                         <strong> Filas finales:</strong> {preview.transformed_rows}
+                        {hasChanges && <span className="text-orange-600 ml-2"><strong>(Cambios sin guardar)</strong></span>}
                     </p>
                     <p className="text-sm text-green-600 mb-2">{preview.message}</p>
+                    <p className="text-xs text-gray-500 mb-2">💡 Haz clic en cualquier celda para editarla</p>
                     <div className="overflow-x-auto">
                         <table className="min-w-full border text-sm">
                             <thead className="bg-gray-100">
@@ -282,11 +377,52 @@ const FileMerge: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {preview.preview?.map((row: any, idx: number) => (
-                                    <tr key={idx} className="hover:bg-gray-50">
-                                        {preview.columns.map((col: string) => (
-                                            <td key={col} className="border px-3 py-2">{row[col]}</td>
-                                        ))}
+                                {preview.preview?.map((row: any, rowIdx: number) => (
+                                    <tr key={rowIdx} className="hover:bg-gray-50">
+                                        {preview.columns.map((col: string) => {
+                                            const isEditing = editingCell?.row === rowIdx && editingCell?.col === col;
+                                            return (
+                                                <td key={col} className="border px-2 py-1">
+                                                    {isEditing ? (
+                                                        <div className="flex items-center gap-1">
+                                                            <input
+                                                                type="text"
+                                                                value={editValue}
+                                                                onChange={(e) => setEditValue(e.target.value)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') saveEdit();
+                                                                    if (e.key === 'Escape') cancelEdit();
+                                                                }}
+                                                                autoFocus
+                                                                className="w-full px-1 py-0.5 border border-blue-400 rounded text-sm"
+                                                            />
+                                                            <button
+                                                                onClick={saveEdit}
+                                                                className="text-green-600 hover:text-green-800 p-0.5"
+                                                                title="Guardar"
+                                                            >
+                                                                ✓
+                                                            </button>
+                                                            <button
+                                                                onClick={cancelEdit}
+                                                                className="text-red-600 hover:text-red-800 p-0.5"
+                                                                title="Cancelar"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div
+                                                            onClick={() => startEditing(rowIdx, col, row[col])}
+                                                            className="cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded min-h-[24px]"
+                                                            title="Clic para editar"
+                                                        >
+                                                            {row[col]}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            );
+                                        })}
                                     </tr>
                                 ))}
                             </tbody>
