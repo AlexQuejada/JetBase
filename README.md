@@ -1,4 +1,4 @@
-# 🚀 JetBase
+# 🚀 Flintrex
 
 **Plataforma de transformación y visualización de datos.**  
 Conecta, limpia y visualiza datos desde CSV, Excel o SQL en un dashboard interactivo.
@@ -8,7 +8,7 @@ Conecta, limpia y visualiza datos desde CSV, Excel o SQL en un dashboard interac
 ## 🎯 ¿Qué problema resuelve?
 
 Muchos negocios tienen datos dispersos en archivos y bases de datos.  
-JetBase permite unificarlos, transformarlos y visualizarlos sin necesidad de herramientas caras o conocimiento técnico avanzado.
+Flintrex permite unificarlos, transformarlos y visualizarlos sin necesidad de herramientas caras o conocimiento técnico avanzado.
 
 ---
 
@@ -27,7 +27,7 @@ JetBase permite unificarlos, transformarlos y visualizarlos sin necesidad de her
 
 ## 📁 Estructura del proyecto
 
-JetBase/
+Flintrex/
 ├── backend/
 │ ├── app/
 │ │ ├── api/ # Endpoints (REST)
@@ -58,8 +58,8 @@ JetBase/
 
 ### 1. Clonar el repositorio
 
-git clone https://github.com/TU_USUARIO/JetBase.git
-cd JetBase
+git clone https://github.com/TU_USUARIO/Flintrex.git
+cd Flintrex
 
 2. Crear y activar entorno virtual
 
@@ -83,7 +83,7 @@ Abrir http://localhost:8000/docs → Documentación automática de la API.
 Autor
 Alex Quejada
 =======
-# 🚀 JetBase
+# 🚀 Flintrex
 
 **Plataforma de transformación y visualización de datos.**  
 Conecta, limpia y visualiza datos desde CSV, Excel o SQL en un dashboard interactivo.
@@ -93,7 +93,7 @@ Conecta, limpia y visualiza datos desde CSV, Excel o SQL en un dashboard interac
 ## 🎯 ¿Qué problema resuelve?
 
 Muchos negocios tienen datos dispersos en archivos y bases de datos.  
-JetBase permite unificarlos, transformarlos y visualizarlos sin necesidad de herramientas caras o conocimiento técnico avanzado.
+Flintrex permite unificarlos, transformarlos y visualizarlos sin necesidad de herramientas caras o conocimiento técnico avanzado.
 
 ---
 
@@ -112,7 +112,7 @@ JetBase permite unificarlos, transformarlos y visualizarlos sin necesidad de her
 
 ## 📁 Estructura del proyecto
 
-JetBase/
+Flintrex/
 
 ├── backend/
 
@@ -159,8 +159,8 @@ JetBase/
 
 ### 1. Clonar el repositorio
 
-git clone https://github.com/TU_USUARIO/JetBase.git
-cd JetBase
+git clone https://github.com/TU_USUARIO/Flintrex.git
+cd Flintrex
 
 2. Crear y activar entorno virtual
 

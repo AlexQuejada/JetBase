@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import router as api_router
 
 app = FastAPI(
-    title="JetBase API",
+    title="Flintrex API",
     description="Plataforma de transformación y visualización de datos",
     version="0.1.0"
 )
@@ -22,7 +22,7 @@ app.include_router(api_router, prefix="/api")
 
 @app.get("/")
 def root():
-    return {"message": "JetBase API is running"}
+    return {"message": "Flintrex API is running"}
 
 @app.get("/health")
 def health():

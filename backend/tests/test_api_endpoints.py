@@ -169,7 +169,7 @@ class TestRootEndpoint:
         """Prueba endpoint raiz"""
         response = client.get("/")
         assert response.status_code == 200
-        assert "JetBase API" in response.json()["message"]
+        assert "Flintrex API" in response.json()["message"]
 
     def test_health(self):
         """Prueba endpoint de health check"""
