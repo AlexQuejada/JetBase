@@ -4,12 +4,26 @@ Genera métricas agregadas según el tipo de dato de cada columna.
 """
 import io
 from typing import Dict, List, Any, Optional, Tuple
-from fastapi import UploadFile, HTTPException
+from fastapi import UploadFile, HTTPException, Request
 import pandas as pd
 import numpy as np
 from datetime import datetime
 
 from app.utils.file_reader import read_file
+from app.utils.file_validation import validate_file_size
+from app.utils.rate_limiter import rate_limiter, DEFAULT_RATE_LIMITS
+from app.core.config import MAX_FILE_SIZE_BYTES
+from app.core.logging_config import get_logger
+
+logger = get_logger("dashboard_service")
+
+
+def _get_client_ip(request: Request) -> str:
+    """Extrae la IP del cliente del request."""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 class DashboardService:
@@ -47,14 +61,31 @@ class DashboardService:
         return "unknown"
 
     @staticmethod
-    async def analyze_columns(file: UploadFile) -> Dict[str, Any]:
+    async def analyze_columns(request: Request, file: UploadFile) -> Dict[str, Any]:
         """
         Analiza un archivo y devuelve información de sus columnas con tipos detectados.
         """
+        client_ip = _get_client_ip(request)
+
+        # Rate limit check
+        allowed, msg = rate_limiter.check_rate_limit(client_ip, DEFAULT_RATE_LIMITS)
+        if not allowed:
+            logger.warning(f"[{client_ip}] Rate limit excedido en dashboard/analyze")
+            raise HTTPException(429, msg)
+        rate_limiter.record_request(client_ip)
+
         contents = await file.read()
+        validate_file_size(len(contents), MAX_FILE_SIZE_BYTES)
         filename = file.filename.lower()
 
-        df = await read_file(contents, filename)
+        logger.debug(f"[{client_ip}] Analyzing: {file.filename}")
+
+        try:
+            df = await read_file(contents, filename)
+        except Exception as e:
+            logger.error(f"[{client_ip}] Error reading file: {e}")
+            raise HTTPException(400, "No se pudo leer el archivo")
+
         if df is None:
             raise HTTPException(400, "No se pudo leer el archivo")
 
@@ -93,6 +124,8 @@ class DashboardService:
 
             columns_info.append(info)
 
+        logger.info(f"[{client_ip}] Analyze done: {file.filename} - {len(df)} rows, {len(columns_info)} columns")
+
         return {
             "filename": file.filename,
             "total_rows": len(df),
@@ -117,6 +150,7 @@ class DashboardService:
 
     @staticmethod
     async def calculate_metric(
+        request: Request,
         file: UploadFile,
         column: str,
         metric: str,
@@ -128,10 +162,25 @@ class DashboardService:
         Calcula una métrica específica para una columna.
         Opcionalmente agrupada por otra columna y/o filtrada.
         """
+        client_ip = _get_client_ip(request)
+
+        # Rate limit check
+        allowed, msg = rate_limiter.check_rate_limit(client_ip, DEFAULT_RATE_LIMITS)
+        if not allowed:
+            logger.warning(f"[{client_ip}] Rate limit excedido en dashboard/metric")
+            raise HTTPException(429, msg)
+        rate_limiter.record_request(client_ip)
+
         contents = await file.read()
+        validate_file_size(len(contents), MAX_FILE_SIZE_BYTES)
         filename = file.filename.lower()
 
-        df = await read_file(contents, filename)
+        try:
+            df = await read_file(contents, filename)
+        except Exception as e:
+            logger.error(f"[{client_ip}] Error reading file: {e}")
+            raise HTTPException(400, "No se pudo leer el archivo")
+
         if df is None:
             raise HTTPException(400, "No se pudo leer el archivo")
 
@@ -150,6 +199,8 @@ class DashboardService:
 
         # Calcular la métrica
         result = await DashboardService._compute_metric(df, column, metric, col_type, group_by)
+
+        logger.debug(f"[{client_ip}] Metric calculated: {column}/{metric} -> {type(result).__name__}")
 
         return {
             "success": True,

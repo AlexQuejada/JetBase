@@ -4,32 +4,81 @@ Contiene toda la lógica de negocio de los endpoints de data.
 """
 import io
 from typing import Optional, List, Tuple
-from fastapi import UploadFile, HTTPException
+from fastapi import UploadFile, HTTPException, Request
 import pandas as pd
 
 from app.utils.file_reader import read_file
 from app.utils.normalization import normalize_dataframe
+from app.utils.file_validation import validate_file_size
+from app.utils.rate_limiter import rate_limiter, ENDPOINT_RATE_LIMITS
+from app.core.config import MAX_FILE_SIZE_BYTES, MAX_FILES_PER_REQUEST
+from app.core.logging_config import get_logger
 from app.services.transform_service import TransformService
 from app.services.merge_service import MergeService
+from app.services.harmonizer_service import HarmonizerService
+
+logger = get_logger("data_service")
+
+
+def _get_client_ip(request: Request) -> str:
+    """Extrae la IP del cliente del request."""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 class DataService:
     """Servicio de procesamiento de archivos CSV/Excel."""
 
     @staticmethod
-    async def upload_file(file: UploadFile, allowed_extensions: tuple) -> dict:
-        """Procesa un archivo de upload (CSV o Excel)."""
+    def _validate_upload(file: UploadFile, allowed_extensions: tuple) -> None:
+        """Valida el archivo al subirlo."""
         filename_lower = file.filename.lower()
-
         if not filename_lower.endswith(allowed_extensions):
             ext_str = ", ".join(allowed_extensions)
+            logger.warning(f"Extensión inválida: {file.filename} - esperaba {ext_str}")
             raise HTTPException(400, f"El archivo debe ser: {ext_str}")
 
+        # Validar tamaño usando file.size si está disponible
+        if hasattr(file, 'size') and file.size is not None:
+            validate_file_size(file.size, MAX_FILE_SIZE_BYTES)
+
+    @staticmethod
+    async def upload_file(request: Request, file: UploadFile, allowed_extensions: tuple) -> dict:
+        """Procesa un archivo de upload (CSV o Excel)."""
+        client_ip = _get_client_ip(request)
+        logger.info(f"[{client_ip}] Upload request: {file.filename}")
+
+        # Check rate limit
+        config = ENDPOINT_RATE_LIMITS.get("upload")
+        allowed, msg = rate_limiter.check_rate_limit(client_ip, config)
+        if not allowed:
+            logger.warning(f"[{client_ip}] Rate limit excedido en upload: {msg}")
+            raise HTTPException(429, msg)
+        rate_limiter.record_request(client_ip)
+
+        # Validar extensión
+        DataService._validate_upload(file, allowed_extensions)
+
+        filename_lower = file.filename.lower()
         contents = await file.read()
-        df = await read_file(contents, filename_lower)
+
+        # Validar tamaño del contenido leído
+        validate_file_size(len(contents), MAX_FILE_SIZE_BYTES)
+        logger.debug(f"[{client_ip}] Archivo leído: {len(contents)} bytes")
+
+        try:
+            df = await read_file(contents, filename_lower)
+        except Exception as e:
+            logger.error(f"[{client_ip}] Error leyendo archivo {file.filename}: {e}")
+            raise HTTPException(400, "No se pudo leer el archivo. Verifica el formato.")
 
         if df is None:
+            logger.warning(f"[{client_ip}] No se pudo parsear: {file.filename}")
             raise HTTPException(400, "No se pudo leer el archivo. Verifica el formato.")
+
+        logger.info(f"[{client_ip}] Upload exitoso: {file.filename} - {len(df)} filas, {len(df.columns)} columnas")
 
         return {
             "filename": file.filename,
@@ -41,6 +90,7 @@ class DataService:
 
     @staticmethod
     async def detect_duplicates(
+        request: Request,
         file: UploadFile,
         key_columns: Optional[str],
         case_sensitive: bool,
@@ -48,10 +98,27 @@ class DataService:
         normalize_accents: bool
     ) -> dict:
         """Detecta duplicados sin eliminarlos."""
+        client_ip = _get_client_ip(request)
+        logger.info(f"[{client_ip}] Detect duplicates: {file.filename}")
+
+        # Check rate limit
+        config = ENDPOINT_RATE_LIMITS.get("detect_duplicates")
+        allowed, msg = rate_limiter.check_rate_limit(client_ip, config)
+        if not allowed:
+            logger.warning(f"[{client_ip}] Rate limit excedido en detect_duplicates")
+            raise HTTPException(429, msg)
+        rate_limiter.record_request(client_ip)
+
         contents = await file.read()
+        validate_file_size(len(contents), MAX_FILE_SIZE_BYTES)
         filename = file.filename.lower()
 
-        df = await read_file(contents, filename)
+        try:
+            df = await read_file(contents, filename)
+        except Exception as e:
+            logger.error(f"[{client_ip}] Error leyendo archivo: {e}")
+            raise HTTPException(400, "No se pudo leer el archivo")
+
         if df is None:
             raise HTTPException(400, "No se pudo leer el archivo")
 
@@ -82,10 +149,13 @@ class DataService:
                     "rows": group.fillna("").astype(str).to_dict(orient='records')
                 })
 
+        dup_count = int(duplicated_mask.sum())
+        logger.info(f"[{client_ip}] Duplicates detected: {dup_count} rows in {len(groups)} groups")
+
         return {
             "success": True,
             "total_rows": len(df),
-            "duplicated_rows": int(duplicated_mask.sum()),
+            "duplicated_rows": dup_count,
             "duplicate_groups": len(groups),
             "groups": groups[:50],
             "key_columns_used": subset_cols or "TODAS",
@@ -94,6 +164,7 @@ class DataService:
 
     @staticmethod
     async def transform(
+        request: Request,
         file: UploadFile,
         operation: str,
         fill_value: Optional[str],
@@ -104,10 +175,27 @@ class DataService:
         keep: str
     ) -> dict:
         """Aplica operaciones de transformación."""
+        client_ip = _get_client_ip(request)
+        logger.info(f"[{client_ip}] Transform request: {file.filename} - operation={operation}")
+
+        # Check rate limit
+        config = ENDPOINT_RATE_LIMITS.get("transform")
+        allowed, msg = rate_limiter.check_rate_limit(client_ip, config)
+        if not allowed:
+            logger.warning(f"[{client_ip}] Rate limit excedido en transform")
+            raise HTTPException(429, msg)
+        rate_limiter.record_request(client_ip)
+
         contents = await file.read()
+        validate_file_size(len(contents), MAX_FILE_SIZE_BYTES)
         filename = file.filename.lower()
 
-        df = await read_file(contents, filename)
+        try:
+            df = await read_file(contents, filename)
+        except Exception as e:
+            logger.error(f"[{client_ip}] Error leyendo archivo: {e}")
+            raise HTTPException(400, "No se pudo leer el archivo")
+
         if df is None:
             raise HTTPException(400, "No se pudo leer el archivo")
 
@@ -117,7 +205,10 @@ class DataService:
         try:
             df, message = TransformService.apply_operation(df, operation, fill_value, key_columns, keep)
         except ValueError as e:
+            logger.warning(f"[{client_ip}] Transform error: {e}")
             raise HTTPException(400, str(e))
+
+        logger.info(f"[{client_ip}] Transform done: {original_rows} -> {len(df)} rows")
 
         return {
             "success": True,
@@ -132,6 +223,7 @@ class DataService:
 
     @staticmethod
     async def merge(
+        request: Request,
         files: List[UploadFile],
         operation: str,
         fill_value: Optional[str],
@@ -144,8 +236,22 @@ class DataService:
         join_type: str
     ) -> dict:
         """Combina múltiples archivos."""
+        client_ip = _get_client_ip(request)
+        logger.info(f"[{client_ip}] Merge request: {len(files)} archivos")
+
+        # Check rate limit
+        config = ENDPOINT_RATE_LIMITS.get("merge")
+        allowed, msg = rate_limiter.check_rate_limit(client_ip, config)
+        if not allowed:
+            logger.warning(f"[{client_ip}] Rate limit excedido en merge")
+            raise HTTPException(429, msg)
+        rate_limiter.record_request(client_ip)
+
         if len(files) < 2:
             raise HTTPException(400, "Se necesitan al menos 2 archivos")
+
+        if len(files) > MAX_FILES_PER_REQUEST:
+            raise HTTPException(400, f"Máximo {MAX_FILES_PER_REQUEST} archivos por request")
 
         # Leer todos los archivos
         dataframes = []
@@ -154,21 +260,25 @@ class DataService:
 
         for file in files:
             contents = await file.read()
+            validate_file_size(len(contents), MAX_FILE_SIZE_BYTES)
             filename = file.filename.lower()
 
-            df = await read_file(contents, filename)
+            try:
+                df = await read_file(contents, filename)
+            except Exception as e:
+                logger.error(f"[{client_ip}] Error leyendo {file.filename}: {e}")
+                raise HTTPException(400, f"No se pudo leer: {file.filename}")
+
             if df is None:
                 raise HTTPException(400, f"No se pudo leer: {file.filename}")
 
-            print(f"[DEBUG] {file.filename}: Columnas originales = {list(df.columns)}")
+            logger.debug(f"[{client_ip}] {file.filename}: {list(df.columns)[:5]}...")
 
             # 1. Primero mapear sinónimos de columnas (ej: full_name → nombre)
             df = MergeService.normalize_columns(df)
-            print(f"[DEBUG] {file.filename}: Columnas después de mapeo = {list(df.columns)}")
 
             # 2. Luego normalizar valores (acentos, espacios, mayúsculas)
             df = normalize_dataframe(df, case_sensitive, normalize_whitespace, normalize_accents)
-            print(f"[DEBUG] {file.filename}: Columnas después de normalización = {list(df.columns)}")
 
             all_columns.update(df.columns)
             dataframes.append(df)
@@ -178,23 +288,20 @@ class DataService:
                 "columns": len(df.columns)
             })
 
-        # Análisis de esquema (después de normalizar columnas)
+        # Análisis de esquema
         columns_by_file = {
             info["filename"]: set(df.columns)
             for info, df in zip(file_info, dataframes)
         }
         common_columns = set.intersection(*columns_by_file.values()) if columns_by_file else set()
-
-        # Recalcular all_columns después de la normalización
         all_columns = set().union(*columns_by_file.values())
 
-        # Parsear y normalizar key_columns (mapear sinónimos como en las columnas)
+        # Parsear key_columns
         key_cols_list = None
         if key_columns:
             key_cols_normalized = []
             for col in key_columns.split(','):
                 col_clean = col.strip().lower().replace(' ', '_').replace('-', '_')
-                # Buscar si hay un mapeo estándar para esta columna
                 matched = False
                 for standard_name, synonyms in MergeService.COLUMN_SYNONYMS.items():
                     if col_clean in synonyms:
@@ -204,7 +311,6 @@ class DataService:
                 if not matched:
                     key_cols_normalized.append(col.strip())
             key_cols_list = key_cols_normalized
-            print(f"[DEBUG] key_columns normalizadas: {key_cols_list}")
 
         # Detectar y ejecutar merge
         detected_mode = MergeService.detect_merge_mode(dataframes, key_cols_list, common_columns)
@@ -214,6 +320,7 @@ class DataService:
             if not key_cols_list:
                 key_cols_list = MergeService._infer_key_columns(common_columns)
                 if not key_cols_list:
+                    logger.warning(f"[{client_ip}] No se pudieron inferir columnas clave")
                     raise HTTPException(400, "No se pudieron inferir columnas clave")
             combined_df = MergeService.perform_join(dataframes, key_cols_list, join_type)
             merge_strategy = f"JOIN ({join_type}) por {', '.join(key_cols_list)}"
@@ -228,9 +335,8 @@ class DataService:
         filenames = [info["filename"] for info in file_info]
         combined_df = MergeService.add_source_column(combined_df, filenames, row_counts, final_mode)
 
-        # Preparar key_columns para la operación (string con nombres normalizados)
+        # Preparar key_columns
         key_columns_for_operation = ','.join(key_cols_list) if key_cols_list else key_columns
-        print(f"[DEBUG] key_columns_for_operation: '{key_columns_for_operation}'")
 
         # Aplicar operación de limpieza
         try:
@@ -239,7 +345,10 @@ class DataService:
             )
             message = f"Merge ({final_mode}): {message}"
         except ValueError as e:
+            logger.warning(f"[{client_ip}] Merge transform error: {e}")
             raise HTTPException(400, str(e))
+
+        logger.info(f"[{client_ip}] Merge completado: {original_rows} -> {len(combined_df)} rows, {merge_strategy}")
 
         return {
             "success": True,
@@ -264,6 +373,7 @@ class DataService:
 
     @staticmethod
     async def merge_download(
+        request: Request,
         files: List[UploadFile],
         operation: str,
         fill_value: Optional[str],
@@ -276,12 +386,17 @@ class DataService:
         join_type: str,
         download_format: str = "csv"
     ) -> Tuple[bytes, str, str]:
-        """
-        Combina múltiples archivos y devuelve el resultado como archivo descargable.
+        """Combina múltiples archivos y devuelve el resultado como archivo descargable."""
+        client_ip = _get_client_ip(request)
+        logger.info(f"[{client_ip}] Merge download: {len(files)} archivos, format={download_format}")
 
-        Returns:
-            Tuple de (contenido_bytes, filename, media_type)
-        """
+        # Check rate limit
+        config = ENDPOINT_RATE_LIMITS.get("merge")
+        allowed, msg = rate_limiter.check_rate_limit(client_ip, config)
+        if not allowed:
+            raise HTTPException(429, msg)
+        rate_limiter.record_request(client_ip)
+
         if len(files) < 2:
             raise HTTPException(400, "Se necesitan al menos 2 archivos")
 
@@ -291,13 +406,13 @@ class DataService:
 
         for file in files:
             contents = await file.read()
+            validate_file_size(len(contents), MAX_FILE_SIZE_BYTES)
             filename = file.filename.lower()
 
             df = await read_file(contents, filename)
             if df is None:
                 raise HTTPException(400, f"No se pudo leer: {file.filename}")
 
-            # Normalizar columnas y valores
             df = MergeService.normalize_columns(df)
             df = normalize_dataframe(df, case_sensitive, normalize_whitespace, normalize_accents)
 
@@ -364,6 +479,144 @@ class DataService:
             combined_df.to_csv(output, index=False, encoding='utf-8-sig')
             content = output.getvalue().encode('utf-8-sig')
             download_filename = f"merged_{timestamp}.csv"
+            media_type = "text/csv; charset=utf-8"
+
+        logger.info(f"[{client_ip}] Merge download generado: {download_filename} ({len(content)} bytes)")
+
+        return content, download_filename, media_type
+
+    @staticmethod
+    async def harmonize(
+        request: Request,
+        files: List[UploadFile],
+        case_sensitive: bool,
+        normalize_whitespace: bool,
+        normalize_accents: bool
+    ) -> dict:
+        """Armoniza múltiples archivos: elige referencia, alinea esquemas, combina."""
+        client_ip = _get_client_ip(request)
+        logger.info(f"[{client_ip}] Harmonize request: {len(files)} archivos")
+
+        # Check rate limit
+        config = ENDPOINT_RATE_LIMITS.get("harmonize")
+        allowed, msg = rate_limiter.check_rate_limit(client_ip, config)
+        if not allowed:
+            logger.warning(f"[{client_ip}] Rate limit excedido en harmonize")
+            raise HTTPException(429, msg)
+        rate_limiter.record_request(client_ip)
+
+        if len(files) < 2:
+            raise HTTPException(400, "Se necesitan al menos 2 archivos para armonizar")
+
+        dataframes = []
+        file_info = []
+        all_columns = set()
+
+        for file in files:
+            contents = await file.read()
+            validate_file_size(len(contents), MAX_FILE_SIZE_BYTES)
+            filename = file.filename.lower()
+
+            df = await read_file(contents, filename)
+            if df is None:
+                logger.error(f"[{client_ip}] No se pudo leer: {file.filename}")
+                raise HTTPException(400, f"No se pudo leer: {file.filename}")
+
+            df = MergeService.normalize_columns(df)
+            df = normalize_dataframe(df, case_sensitive, normalize_whitespace, normalize_accents)
+
+            all_columns.update(df.columns)
+            dataframes.append(df)
+            file_info.append({
+                "filename": file.filename,
+                "rows": len(df),
+                "columns": len(df.columns)
+            })
+
+        # Llamar al armonizador
+        filenames = [f.filename for f in files]
+        combined_df, metadata = HarmonizerService.harmonize(dataframes, filenames)
+
+        # Obtener scores de archivos para el response
+        file_scores = metadata.get('file_scores', [])
+        for i, info in enumerate(file_scores):
+            info['filename'] = file_info[i]['filename']
+
+        logger.info(f"[{client_ip}] Harmonize completado: reference={metadata.get('reference_file')}")
+
+        return {
+            "success": True,
+            "files_processed": len(files),
+            "files": file_info,
+            "reference_file": metadata.get('reference_file'),
+            "reference_index": metadata.get('reference_index'),
+            "file_scores": file_scores,
+            "combined_rows": metadata.get('combined_rows', len(combined_df)),
+            "final_columns": metadata.get('final_columns', list(combined_df.columns)),
+            "columns": list(combined_df.columns),
+            "preview": combined_df.head(100).fillna("").astype(str).to_dict(orient='records')
+        }
+
+    @staticmethod
+    async def harmonize_download(
+        request: Request,
+        files: List[UploadFile],
+        case_sensitive: bool,
+        normalize_whitespace: bool,
+        normalize_accents: bool,
+        download_format: str = "csv"
+    ) -> Tuple[bytes, str, str]:
+        """Armoniza múltiples archivos y devuelve el resultado como archivo descargable."""
+        client_ip = _get_client_ip(request)
+        logger.info(f"[{client_ip}] Harmonize download: {len(files)} archivos")
+
+        # Check rate limit
+        config = ENDPOINT_RATE_LIMITS.get("harmonize")
+        allowed, msg = rate_limiter.check_rate_limit(client_ip, config)
+        if not allowed:
+            raise HTTPException(429, msg)
+        rate_limiter.record_request(client_ip)
+
+        if len(files) < 2:
+            raise HTTPException(400, "Se necesitan al menos 2 archivos para armonizar")
+
+        dataframes = []
+        filenames_list = []
+
+        for file in files:
+            contents = await file.read()
+            validate_file_size(len(contents), MAX_FILE_SIZE_BYTES)
+            filename = file.filename.lower()
+
+            df = await read_file(contents, filename)
+            if df is None:
+                raise HTTPException(400, f"No se pudo leer: {file.filename}")
+
+            df = MergeService.normalize_columns(df)
+            df = normalize_dataframe(df, case_sensitive, normalize_whitespace, normalize_accents)
+
+            dataframes.append(df)
+            filenames_list.append(file.filename)
+
+        # Armonizar
+        combined_df, _ = HarmonizerService.harmonize(dataframes, filenames_list)
+
+        # Generar archivo
+        timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+
+        if download_format.lower() == "excel":
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                combined_df.to_excel(writer, index=False, sheet_name='Harmonized')
+            output.seek(0)
+            content = output.getvalue()
+            download_filename = f"harmonized_{timestamp}.xlsx"
+            media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        else:
+            output = io.StringIO()
+            combined_df.to_csv(output, index=False, encoding='utf-8-sig')
+            content = output.getvalue().encode('utf-8-sig')
+            download_filename = f"harmonized_{timestamp}.csv"
             media_type = "text/csv; charset=utf-8"
 
         return content, download_filename, media_type

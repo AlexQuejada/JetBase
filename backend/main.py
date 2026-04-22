@@ -1,6 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import router as api_router
+from app.core.logging_config import setup_logging
+from app.core.config import MAX_FILE_SIZE_MB
+
+# Setup logging
+logger = setup_logging()
+logger.info(f"Flintrex API starting - max file size: {MAX_FILE_SIZE_MB}MB")
 
 app = FastAPI(
     title="Flintrex API",

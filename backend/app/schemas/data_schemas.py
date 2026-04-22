@@ -77,6 +77,32 @@ class MergeResponse(BaseModel):
     preview: List[Dict[str, Any]]
 
 
+<<<<<<< HEAD
+=======
+class FileHealthScore(BaseModel):
+    """Score de salud de un archivo."""
+    index: int
+    filename: str
+    health_score: float
+    rows: int
+    columns: int
+
+
+class HarmonizeResponse(BaseModel):
+    """Respuesta de armonización de archivos."""
+    success: bool
+    files_processed: int
+    files: List[FileInfo]
+    reference_file: str
+    reference_index: int
+    file_scores: List[FileHealthScore]
+    combined_rows: int
+    final_columns: List[str]
+    columns: List[str]
+    preview: List[Dict[str, Any]]
+
+
+>>>>>>> feature/backend
 # ============ Dashboard Schemas ============
 
 class ColumnInfo(BaseModel):
@@ -116,4 +142,8 @@ class DashboardValidationResponse(BaseModel):
     message: str
     column: str
     metric: str
+<<<<<<< HEAD
     chart_type: str
+=======
+    chart_type: str
+>>>>>>> feature/backend
