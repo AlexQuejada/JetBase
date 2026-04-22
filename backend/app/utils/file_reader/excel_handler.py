@@ -6,7 +6,13 @@ import warnings
 import pandas as pd
 from typing import Optional, List
 
-from .common import clean_dataframe, FileReadingError
+from .common import (
+    clean_dataframe,
+    FileReadingError,
+    validate_not_empty,
+    validate_not_corrupted,
+    validate_dataframe_not_empty,
+)
 
 
 # Import opcional de openpyxl para manejo avanzado de celdas mergeadas
@@ -61,7 +67,8 @@ def _handle_merged_cells(workbook, sheet_name: str, df: pd.DataFrame) -> pd.Data
 async def read_excel_robust(
     contents: bytes,
     sheet_name: Optional[str] = None,
-    combine_sheets: bool = False
+    combine_sheets: bool = False,
+    filename: str = ""
 ) -> Optional[pd.DataFrame]:
     """
     Lee un archivo Excel (.xlsx, .xls, .xlsm) de forma robusta.
@@ -76,10 +83,22 @@ async def read_excel_robust(
         contents: Contenido binario del archivo
         sheet_name: Nombre de hoja específica (None = auto)
         combine_sheets: Si True, combina todas las hojas
+        filename: Nombre del archivo (opcional, para mensajes de error)
 
     Returns:
         DataFrame o None si falla
     """
+    # ============ VALIDACIÓN 1: ARCHIVO VACÍO ============
+    try:
+        validate_not_empty(contents, filename)
+    except FileReadingError:
+        return None
+    
+    try:
+        validate_not_corrupted(contents, filename)
+    except FileReadingError:
+        return None
+
     if not contents or len(contents) < 10:
         return None
 
@@ -162,7 +181,13 @@ async def read_excel_robust(
             return None
 
         if len(dfs) == 1:
-            return dfs[0]
+            result_df = dfs[0]
+            # ============ VALIDACIÓN 2: DATAFRAME CON DATOS ============
+            try:
+                validate_dataframe_not_empty(result_df, filename)
+            except FileReadingError:
+                return None
+            return result_df
 
         # Combinar múltiples hojas
         all_columns = set()
@@ -176,7 +201,41 @@ async def read_excel_robust(
                     df[col] = None
             aligned_dfs.append(df[list(all_columns)])
 
-        return pd.concat(aligned_dfs, ignore_index=True)
+        result_df = pd.concat(aligned_dfs, ignore_index=True)
+
+        # ============ VALIDACIÓN 2: DATAFRAME CON DATOS ============
+        try:
+            validate_dataframe_not_empty(result_df, filename)
+        except FileReadingError:
+            return None
+
+        return result_df
 
     except Exception:
         return None
+
+
+async def get_excel_sheet_names(contents: bytes) -> Optional[List[str]]:
+    """
+    Obtiene los nombres de todas las hojas de un archivo Excel.
+
+    Args:
+        contents: Contenido binario del archivo Excel
+
+    Returns:
+        Lista de nombres de hojas o None si no se puede leer
+    """
+    # ============ VALIDACIÓN: ARCHIVO VACÍO ============
+    if not contents or len(contents) < 10:
+        return None
+
+    engines_to_try = ['openpyxl', 'xlrd', None]
+
+    for engine in engines_to_try:
+        try:
+            xl_file = pd.ExcelFile(io.BytesIO(contents), engine=engine)
+            return xl_file.sheet_names
+        except Exception:
+            continue
+
+    return None

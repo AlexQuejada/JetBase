@@ -13,6 +13,9 @@ from .common import (
     detect_separator_sample,
     clean_dataframe,
     FileReadingError,
+    validate_not_empty,
+    validate_not_corrupted,
+    validate_dataframe_not_empty,
 )
 
 
@@ -90,7 +93,7 @@ def _try_read_csv_with_encoding(content: bytes, encoding: str) -> Optional[pd.Da
     return None
 
 
-async def read_csv_robust(contents: bytes) -> Optional[pd.DataFrame]:
+async def read_csv_robust(contents: bytes, filename: str = "") -> Optional[pd.DataFrame]:
     """
     Lee un CSV probando múltiples codificaciones y separadores.
 
@@ -103,11 +106,22 @@ async def read_csv_robust(contents: bytes) -> Optional[pd.DataFrame]:
 
     Args:
         contents: Contenido binario del archivo CSV
+        filename: Nombre del archivo (opcional, para mensajes de error)
 
     Returns:
         DataFrame limpio o None si no se puede leer
     """
-    if not contents or len(contents) < 5:
+    # ============ VALIDACIÓN 1: ARCHIVO VACÍO ============
+    try:
+        validate_not_empty(contents, filename)
+    except FileReadingError:
+        return None
+    
+    # ============ VALIDACIÓN 2: ARCHIVO CORRUPTO ============
+    
+    try:
+        validate_not_corrupted(contents, filename)
+    except FileReadingError:
         return None
 
     # Detectar y remover BOM
@@ -124,6 +138,11 @@ async def read_csv_robust(contents: bytes) -> Optional[pd.DataFrame]:
         try:
             df = _try_read_csv_with_encoding(content, enc)
             if df is not None and len(df.columns) > 0:
+                # ============ VALIDACIÓN 2: DATAFRAME CON DATOS ============
+                try:
+                    validate_dataframe_not_empty(df, filename)
+                except FileReadingError:
+                    return None
                 return df
         except Exception:
             continue
@@ -139,6 +158,11 @@ async def read_csv_robust(contents: bytes) -> Optional[pd.DataFrame]:
             skip_blank_lines=True,
         )
         if df is not None and len(df.columns) > 0:
+            # ============ VALIDACIÓN 2: DATAFRAME CON DATOS ============
+            try:
+                validate_dataframe_not_empty(df, filename)
+            except FileReadingError:
+                return None
             return clean_dataframe(df)
     except Exception:
         pass
