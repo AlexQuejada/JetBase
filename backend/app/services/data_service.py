@@ -11,6 +11,7 @@ from app.utils.file_reader import read_file
 from app.utils.normalization import normalize_dataframe
 from app.services.transform_service import TransformService
 from app.services.merge_service import MergeService
+from app.services.harmonizer_service import HarmonizerService
 
 
 class DataService:
@@ -364,6 +365,126 @@ class DataService:
             combined_df.to_csv(output, index=False, encoding='utf-8-sig')
             content = output.getvalue().encode('utf-8-sig')
             download_filename = f"merged_{timestamp}.csv"
+            media_type = "text/csv; charset=utf-8"
+
+        return content, download_filename, media_type
+
+    @staticmethod
+    async def harmonize(
+        files: List[UploadFile],
+        case_sensitive: bool,
+        normalize_whitespace: bool,
+        normalize_accents: bool
+    ) -> dict:
+        """Armoniza múltiples archivos: elige referencia, alinea esquemas, combina."""
+        if len(files) < 2:
+            raise HTTPException(400, "Se necesitan al menos 2 archivos para armonizar")
+
+        dataframes = []
+        file_info = []
+        all_columns = set()
+
+        for file in files:
+            contents = await file.read()
+            filename = file.filename.lower()
+
+            df = await read_file(contents, filename)
+            if df is None:
+                raise HTTPException(400, f"No se pudo leer: {file.filename}")
+
+            print(f"[DEBUG] {file.filename}: Columnas originales = {list(df.columns)}")
+
+            # 1. Normalizar columnas usando sinonimos (ej: full_name → nombre)
+            df = MergeService.normalize_columns(df)
+            print(f"[DEBUG] {file.filename}: Columnas después de mapeo = {list(df.columns)}")
+
+            # 2. Normalizar valores (acentos, espacios, mayúsculas)
+            df = normalize_dataframe(df, case_sensitive, normalize_whitespace, normalize_accents)
+            print(f"[DEBUG] {file.filename}: Columnas después de normalización = {list(df.columns)}")
+
+            all_columns.update(df.columns)
+            dataframes.append(df)
+            file_info.append({
+                "filename": file.filename,
+                "rows": len(df),
+                "columns": len(df.columns)
+            })
+
+        # Llamar al armonizador
+        filenames = [f.filename for f in files]
+        combined_df, metadata = HarmonizerService.harmonize(dataframes, filenames)
+
+        # Obtener scores de archivos para el response
+        file_scores = metadata.get('file_scores', [])
+        for i, info in enumerate(file_scores):
+            info['filename'] = file_info[i]['filename']
+
+        return {
+            "success": True,
+            "files_processed": len(files),
+            "files": file_info,
+            "reference_file": metadata.get('reference_file'),
+            "reference_index": metadata.get('reference_index'),
+            "file_scores": file_scores,
+            "combined_rows": metadata.get('combined_rows', len(combined_df)),
+            "final_columns": metadata.get('final_columns', list(combined_df.columns)),
+            "columns": list(combined_df.columns),
+            "preview": combined_df.head(100).fillna("").astype(str).to_dict(orient='records')
+        }
+
+    @staticmethod
+    async def harmonize_download(
+        files: List[UploadFile],
+        case_sensitive: bool,
+        normalize_whitespace: bool,
+        normalize_accents: bool,
+        download_format: str = "csv"
+    ) -> Tuple[bytes, str, str]:
+        """
+        Armoniza múltiples archivos y devuelve el resultado como archivo descargable.
+
+        Returns:
+            Tuple de (contenido_bytes, filename, media_type)
+        """
+        if len(files) < 2:
+            raise HTTPException(400, "Se necesitan al menos 2 archivos para armonizar")
+
+        dataframes = []
+        filenames_list = []
+
+        for file in files:
+            contents = await file.read()
+            filename = file.filename.lower()
+
+            df = await read_file(contents, filename)
+            if df is None:
+                raise HTTPException(400, f"No se pudo leer: {file.filename}")
+
+            df = MergeService.normalize_columns(df)
+            df = normalize_dataframe(df, case_sensitive, normalize_whitespace, normalize_accents)
+
+            dataframes.append(df)
+            filenames_list.append(file.filename)
+
+        # Armonizar
+        combined_df, _ = HarmonizerService.harmonize(dataframes, filenames_list)
+
+        # Generar archivo
+        timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+
+        if download_format.lower() == "excel":
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                combined_df.to_excel(writer, index=False, sheet_name='Harmonized')
+            output.seek(0)
+            content = output.getvalue()
+            download_filename = f"harmonized_{timestamp}.xlsx"
+            media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        else:
+            output = io.StringIO()
+            combined_df.to_csv(output, index=False, encoding='utf-8-sig')
+            content = output.getvalue().encode('utf-8-sig')
+            download_filename = f"harmonized_{timestamp}.csv"
             media_type = "text/csv; charset=utf-8"
 
         return content, download_filename, media_type
