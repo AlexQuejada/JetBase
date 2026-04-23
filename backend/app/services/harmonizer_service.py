@@ -314,6 +314,26 @@ class HarmonizerService:
         Returns:
             (DataFrame armonizado, metadata del proceso)
         """
+        # Single file: return as-is with metadata
+        if len(dataframes) == 1:
+            df = dataframes[0]
+            scores = [{
+                'index': 0,
+                'filename': filenames[0] if filenames else "file_0",
+                'health_score': cls.calculate_file_health(df),
+                'rows': len(df),
+                'columns': len(df.columns)
+            }]
+            metadata = {
+                'reference_file': filenames[0] if filenames else "file_0",
+                'reference_index': 0,
+                'file_scores': scores,
+                'files_harmonized': 1,
+                'combined_rows': len(df),
+                'final_columns': list(df.columns)
+            }
+            return df, metadata
+
         if len(dataframes) < 2:
             raise ValueError("Se necesitan al menos 2 archivos para armonizar")
 
