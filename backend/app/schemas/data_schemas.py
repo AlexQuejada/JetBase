@@ -77,8 +77,7 @@ class MergeResponse(BaseModel):
     preview: List[Dict[str, Any]]
 
 
-<<<<<<< HEAD
-=======
+
 class FileHealthScore(BaseModel):
     """Score de salud de un archivo."""
     index: int
@@ -102,7 +101,7 @@ class HarmonizeResponse(BaseModel):
     preview: List[Dict[str, Any]]
 
 
->>>>>>> feature/backend
+
 # ============ Dashboard Schemas ============
 
 class ColumnInfo(BaseModel):

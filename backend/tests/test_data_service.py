@@ -1,5 +1,5 @@
 """
-Tests de integracion para DataService
+Tests de integración para DataService
 Prueba el servicio principal de procesamiento de datos
 """
 
@@ -14,6 +14,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.services.data_service import DataService
 from fastapi import UploadFile, HTTPException
+
+
+class MockRequest:
+    """Mock de Request para testing"""
+    def __init__(self):
+        self.client = MagicMock()
+        self.client.host = "127.0.0.1"
+        self.headers = {}
 
 
 class MockUploadFile:
@@ -35,8 +43,9 @@ class TestDataServiceUpload:
         """Upload CSV exitoso"""
         content = b'cliente_id,nombre,email\n1,Jose,jose@test.com\n2,Maria,maria@test.com'
         file = MockUploadFile('test.csv', content)
+        request = MockRequest()
 
-        result = await DataService.upload_file(file, allowed_extensions=('.csv',))
+        result = await DataService.upload_file(request, file, allowed_extensions=('.csv',))
 
         assert result['filename'] == 'test.csv'
         assert result['rows'] == 2
@@ -47,9 +56,10 @@ class TestDataServiceUpload:
     async def test_upload_invalid_extension(self):
         """Upload con extension invalida"""
         file = MockUploadFile('test.txt', b'contenido')
+        request = MockRequest()
 
         with pytest.raises(HTTPException) as exc_info:
-            await DataService.upload_file(file, allowed_extensions=('.csv',))
+            await DataService.upload_file(request, file, allowed_extensions=('.csv',))
 
         assert exc_info.value.status_code == 400
 
@@ -57,9 +67,10 @@ class TestDataServiceUpload:
     async def test_upload_corrupted_file(self):
         """Upload de archivo corrupto"""
         file = MockUploadFile('test.csv', b'\x00\x01\x02')
+        request = MockRequest()
 
         with pytest.raises(HTTPException) as exc_info:
-            await DataService.upload_file(file, allowed_extensions=('.csv',))
+            await DataService.upload_file(request, file, allowed_extensions=('.csv',))
 
         assert exc_info.value.status_code == 400
 
@@ -72,8 +83,9 @@ class TestDataServiceDetectDuplicates:
         """Deteccion simple de duplicados"""
         content = b'cliente_id,nombre\n1,Jose\n2,Maria\n2,Maria'
         file = MockUploadFile('test.csv', content)
+        request = MockRequest()
 
-        result = await DataService.detect_duplicates(file, 'cliente_id', False, True, True)
+        result = await DataService.detect_duplicates(request, file, 'cliente_id', False, True, True)
 
         assert result['success'] is True
         assert result['total_rows'] == 3
@@ -85,8 +97,9 @@ class TestDataServiceDetectDuplicates:
         """Deteccion cuando no hay duplicados"""
         content = b'cliente_id,nombre\n1,Jose\n2,Maria\n3,Pedro'
         file = MockUploadFile('test.csv', content)
+        request = MockRequest()
 
-        result = await DataService.detect_duplicates(file, 'cliente_id', False, True, True)
+        result = await DataService.detect_duplicates(request, file, 'cliente_id', False, True, True)
 
         assert result['duplicated_rows'] == 0
         assert result['duplicate_groups'] == 0
@@ -96,8 +109,9 @@ class TestDataServiceDetectDuplicates:
         """Deteccion considerando todas las columnas"""
         content = b'cliente_id,nombre\n1,Jose\n2,Maria\n3,Jose'
         file = MockUploadFile('test.csv', content)
+        request = MockRequest()
 
-        result = await DataService.detect_duplicates(file, None, False, True, True)
+        result = await DataService.detect_duplicates(request, file, None, False, True, True)
 
         # No hay duplicados exactos en todas las columnas
         assert result['duplicated_rows'] == 0
@@ -111,8 +125,9 @@ class TestDataServiceTransform:
         """Transformacion dropna"""
         content = b'cliente_id,nombre,email\n1,Jose,jose@test.com\n2,,'
         file = MockUploadFile('test.csv', content)
+        request = MockRequest()
 
-        result = await DataService.transform(file, 'dropna', None, None, False, True, True, 'first')
+        result = await DataService.transform(request, file, 'dropna', None, None, False, True, True, 'first')
 
         assert result['success'] is True
         assert result['original_rows'] == 2
@@ -124,8 +139,9 @@ class TestDataServiceTransform:
         """Transformacion fillna"""
         content = b'cliente_id,nombre,email\n1,Jose,jose@test.com\n2,,maria@test.com'
         file = MockUploadFile('test.csv', content)
+        request = MockRequest()
 
-        result = await DataService.transform(file, 'fillna', 'SIN_NOMBRE', None, False, True, True, 'first')
+        result = await DataService.transform(request, file, 'fillna', 'SIN_NOMBRE', None, False, True, True, 'first')
 
         assert result['success'] is True
         assert result['original_rows'] == result['transformed_rows']
@@ -136,9 +152,10 @@ class TestDataServiceTransform:
         """Transformacion con operacion invalida"""
         content = b'cliente_id,nombre\n1,Jose'
         file = MockUploadFile('test.csv', content)
+        request = MockRequest()
 
         with pytest.raises(HTTPException) as exc_info:
-            await DataService.transform(file, 'invalid_op', None, None, False, True, True, 'first')
+            await DataService.transform(request, file, 'invalid_op', None, None, False, True, True, 'first')
 
         assert exc_info.value.status_code == 400
 
@@ -155,8 +172,9 @@ class TestDataServiceMerge:
             MockUploadFile('file1.csv', content1),
             MockUploadFile('file2.csv', content2)
         ]
+        request = MockRequest()
 
-        result = await DataService.merge(files, 'clean', None, None, False, True, True, 'first', 'union', 'inner')
+        result = await DataService.merge(request, files, 'clean', None, None, False, True, True, 'first', 'union', 'inner')
 
         assert result['success'] is True
         assert result['files_processed'] == 2
@@ -172,8 +190,9 @@ class TestDataServiceMerge:
             MockUploadFile('clientes.csv', content1),
             MockUploadFile('emails.csv', content2)
         ]
+        request = MockRequest()
 
-        result = await DataService.merge(files, 'clean', None, 'cliente_id', False, True, True, 'first', 'join', 'inner')
+        result = await DataService.merge(request, files, 'clean', None, 'cliente_id', False, True, True, 'first', 'join', 'inner')
 
         assert result['success'] is True
         assert result['original_rows'] == 4
@@ -189,8 +208,9 @@ class TestDataServiceMerge:
             MockUploadFile('clientes.csv', content1),
             MockUploadFile('emails.csv', content2)
         ]
+        request = MockRequest()
 
-        result = await DataService.merge(files, 'clean', None, None, False, True, True, 'first', 'auto', 'inner')
+        result = await DataService.merge(request, files, 'clean', None, None, False, True, True, 'first', 'auto', 'inner')
 
         # Debe detectar JOIN por el patron cliente_id
         assert result['schema_validation']['merge_mode_detected'] == 'join'
@@ -199,9 +219,10 @@ class TestDataServiceMerge:
     async def test_merge_insufficient_files(self):
         """Merge con menos de 2 archivos"""
         files = [MockUploadFile('test.csv', b'a,b\n1,2')]
+        request = MockRequest()
 
         with pytest.raises(HTTPException) as exc_info:
-            await DataService.merge(files, 'clean', None, None, False, True, True, 'first', 'union', 'inner')
+            await DataService.merge(request, files, 'clean', None, None, False, True, True, 'first', 'union', 'inner')
 
         assert exc_info.value.status_code == 400
 
@@ -214,8 +235,9 @@ class TestDataServiceMerge:
             MockUploadFile('file1.csv', content1),
             MockUploadFile('file2.csv', content2)
         ]
+        request = MockRequest()
 
-        result = await DataService.merge(files, 'drop_duplicates', None, 'cliente_id', False, True, True, 'first', 'union', 'inner')
+        result = await DataService.merge(request, files, 'drop_duplicates', None, 'cliente_id', False, True, True, 'first', 'union', 'inner')
 
         assert result['transformed_rows'] == 1  # Se elimino el duplicado
 
