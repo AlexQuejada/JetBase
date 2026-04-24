@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-const Sidebar: React.FC = () => {
+const Sidebar: React.FC<{ collapsed?: boolean; onCollapsedChange?: (collapsed: boolean) => void }> = ({ collapsed: externalCollapsed, onCollapsedChange }) => {
+    const [internalCollapsed, setInternalCollapsed] = useState(false);
+    const collapsed = externalCollapsed ?? internalCollapsed;
     const location = useLocation();
 
     const navigation = [
@@ -41,40 +43,53 @@ const Sidebar: React.FC = () => {
         },
     ];
 
+    const toggleCollapse = () => {
+        const newCollapsed = !collapsed;
+        setInternalCollapsed(newCollapsed);
+        onCollapsedChange?.(newCollapsed);
+    };
+
     return (
-        <div className="flex h-full w-64 flex-col bg-gray-900 px-3 py-4 overflow-y-auto flex-shrink-0">
-            {/* Header */}
-            <div className="mb-6 px-2">
-                <h1 className="text-xl font-bold text-white">Flintrex</h1>
-                <p className="text-xs text-gray-400 mt-1">Data Integration Tool</p>
-            </div>
+        <div className={`relative flex-shrink-0 transition-all duration-500 ease-in-out ${collapsed ? 'w-16' : 'w-64'}`}>
+            {/* Background que se desvanece suavemente */}
+            <div className={`absolute inset-0 bg-gray-900 transition-opacity duration-500 ease-in-out pointer-events-none ${collapsed ? 'opacity-0' : 'opacity-100'}`} />
+            {/* Contenido */}
+            <div className="relative z-10 flex h-full flex-col px-3 py-4 overflow-hidden">
+
+            {/* Botón colapsar */}
+            <button
+                onClick={toggleCollapse}
+                className={`flex items-center justify-center w-8 h-8 mb-4 mx-auto rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-300 ${collapsed ? '' : 'hover:scale-110'}`}
+                title={collapsed ? 'Expandir' : 'Colapsar'}
+            >
+                <svg className={`w-5 h-5 transition-transform duration-500 ease-in-out ${collapsed ? 'rotate-[540deg]' : ''}`} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </svg>
+            </button>
 
             {/* Main nav */}
-            <nav className="flex flex-col gap-0.5">
+            <nav className="flex flex-col gap-0.5 transition-all duration-300 ease-out">
                 {navigation.map((item) => {
                     const isActive = location.pathname === item.href;
                     return (
                         <Link
                             key={item.name}
                             to={item.href}
-                            className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors ${
-                                isActive
-                                    ? "bg-gray-800 text-white font-medium"
-                                    : "text-gray-400 hover:bg-gray-800 hover:text-gray-100"
-                            }`}
-                        >
-                            {item.icon}
-                            {item.name}
+                            className={`flex items-center rounded-lg px-2.5 py-2 text-sm transition-all duration-300 ease-out ${isActive
+                                ? "bg-gray-800 text-white font-medium shadow-sm"
+                                : "text-gray-400 hover:bg-gray-800 hover:text-gray-100 hover:shadow-md"
+                                } ${collapsed ? 'justify-center' : 'gap-2.5'}`}>
+                            <span className={`transition-transform duration-500 ease-in-out ${collapsed ? 'rotate-[360deg]' : ''}`}>
+                                {item.icon}
+                            </span>
+                            <span className={`whitespace-nowrap overflow-hidden transition-all duration-300 ease-out ${collapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
+                                {item.name}
+                            </span>
                         </Link>
                     );
                 })}
             </nav>
 
-            {/* Footer info */}
-            <div className="mt-auto pt-6 border-t border-gray-800">
-                <p className="text-xs text-gray-500 px-2">
-                    v1.0.0
-                </p>
             </div>
         </div>
     );
