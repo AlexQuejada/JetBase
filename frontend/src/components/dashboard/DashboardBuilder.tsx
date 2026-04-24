@@ -1,7 +1,9 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import { useData } from '../../context/DataContext';
 import MetricSelector, { ChartConfig } from './MetricSelector';
 import ChartRenderer from './ChartRenderer';
+import { BarChart3, CheckCircle2, LayoutDashboard, Image } from 'lucide-react';
 
 interface DashboardWidget {
   id: string;
@@ -12,21 +14,23 @@ const STORAGE_KEY_WIDGETS = 'flintrex_dashboard_widgets';
 
 const DashboardBuilder: React.FC = () => {
   const { processedData, clearProcessedData } = useData();
-  const [widgets, setWidgets] = useState<DashboardWidget[]>([]);
-  const [currentConfig, setCurrentConfig] = useState<ChartConfig | null>(null);
-  const [configError, setConfigError] = useState('');
+  const widgetRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Load widgets from localStorage on mount (runs every mount, not just first time)
-  useEffect(() => {
+  // Load widgets directly from localStorage as initial state (always runs on mount)
+  const [widgets, setWidgets] = useState<DashboardWidget[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY_WIDGETS);
       if (stored) {
-        setWidgets(JSON.parse(stored));
+        return JSON.parse(stored);
       }
     } catch (err) {
       console.error('Error loading widgets:', err);
     }
-  }, []);
+    return [];
+  });
+
+  const [currentConfig, setCurrentConfig] = useState<ChartConfig | null>(null);
+  const [configError, setConfigError] = useState('');
 
   // Save widgets to localStorage whenever they change
   useEffect(() => {
@@ -90,18 +94,45 @@ const DashboardBuilder: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportWidgetImage = async (widgetId: string, title?: string) => {
+    const element = widgetRefs.current[widgetId];
+    if (!element) return;
+
+    try {
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#ffffff',
+        scale: 2
+      });
+      const url = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `grafico-${title || widgetId}-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error('Error exportando imagen:', err);
+    }
+  };
+
+  const handleExportAllImages = async () => {
+    for (const widget of widgets) {
+      await handleExportWidgetImage(widget.id, widget.config.title);
+    }
+  };
+
   // Verificar si hay datos procesados disponibles
   const hasData = processedData && processedData.preview && processedData.preview.length > 0;
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">📊 Dashboard Builder</h2>
+        <h2 className="text-xl font-semibold">Dashboard Builder</h2>
         <div className="flex gap-2">
           {hasData && (
             <button
               onClick={clearProcessedData}
-              className="text-sm text-red-600 hover:text-red-800"
+              className="text-sm text-red-600 hover:text-red-800 btn-ghost px-2 py-1 rounded-md"
             >
               Limpiar datos
             </button>
@@ -110,13 +141,22 @@ const DashboardBuilder: React.FC = () => {
             <>
               <button
                 onClick={handleExportDashboard}
-                className="text-sm bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 transition"
+                className="text-sm bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 transition btn-relief"
               >
                 Exportar Config
               </button>
+              {hasData && (
+                <button
+                  onClick={handleExportAllImages}
+                  className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition btn-relief flex items-center gap-1"
+                >
+                  <Image className="w-4 h-4" />
+                  Exportar PNG
+                </button>
+              )}
               <button
                 onClick={handleClearDashboard}
-                className="text-sm bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition"
+                className="text-sm bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition btn-relief"
               >
                 Limpiar Todo
               </button>
@@ -131,7 +171,7 @@ const DashboardBuilder: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-green-800">
-                <strong>✅ Datos listos para visualizar</strong>
+                <CheckCircle2 className="w-4 h-4 inline mr-1" /> Datos listos para visualizar
               </p>
               <p className="text-xs text-green-600 mt-1">
                 {processedData.transformed_rows.toLocaleString()} filas · {processedData.columns.length} columnas
@@ -148,7 +188,7 @@ const DashboardBuilder: React.FC = () => {
       {!hasData && widgets.length > 0 && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>📊 Tienes {widgets.length} gráficos guardados</strong>
+            <BarChart3 className="w-4 h-4 inline mr-1" /> Tienes {widgets.length} gráficos guardados
           </p>
           <p className="text-xs text-blue-600 mt-1">
             Sube datos compatibles para ver los gráficos realescharts.
@@ -170,7 +210,7 @@ const DashboardBuilder: React.FC = () => {
               <div className="mt-4 text-center">
                 <button
                   onClick={handleAddWidget}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-medium"
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-medium btn-relief"
                 >
                   + Agregar al Dashboard
                 </button>
@@ -194,7 +234,7 @@ const DashboardBuilder: React.FC = () => {
       {/* Estado sin datos y sin widgets */}
       {!hasData && widgets.length === 0 && (
         <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
-          <div className="text-4xl mb-4">📈</div>
+          <LayoutDashboard className="w-10 h-10 mx-auto mb-4 text-gray-400" />
           <p className="text-lg mb-2">No hay datos procesados</p>
           <p className="text-sm">
             Primero procesa tus archivos en la sección <strong>"Transformar"</strong>.
@@ -211,7 +251,7 @@ const DashboardBuilder: React.FC = () => {
           <h3 className="text-lg font-medium mb-4">Mi Dashboard ({widgets.length} gráficos)</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {widgets.map((widget) => (
-              <div key={widget.id} className="relative group">
+              <div key={widget.id} className="relative group" ref={(el) => { widgetRefs.current[widget.id] = el; }}>
                 {hasData ? (
                   <ChartRenderer
                     data={processedData}
@@ -219,7 +259,7 @@ const DashboardBuilder: React.FC = () => {
                   />
                 ) : (
                   <div className="bg-gray-100 rounded-lg p-6 border h-64 flex flex-col items-center justify-center">
-                    <div className="text-4xl mb-2 text-gray-400">📊</div>
+                    <BarChart3 className="w-10 h-10 mb-2 text-gray-400" />
                     <p className="font-medium text-gray-600">{widget.config.title || 'Widget'}</p>
                     <p className="text-sm text-gray-400 mt-1">
                       {widget.config.chartType} - {widget.config.metric} ({widget.config.column})
@@ -229,6 +269,14 @@ const DashboardBuilder: React.FC = () => {
                     </p>
                   </div>
                 )}
+
+                <button
+                  onClick={() => handleExportWidgetImage(widget.id, widget.config.title)}
+                  className="absolute top-2 left-2 bg-green-500 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition"
+                  title="Exportar como PNG"
+                >
+                  <Image className="w-4 h-4" />
+                </button>
 
                 <button
                   onClick={() => handleRemoveWidget(widget.id)}

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ProcessedData } from '../../context/DataContext';
+import { Hash, FileText, Calendar, CheckSquare, HelpCircle } from 'lucide-react';
 
 interface MetricSelectorProps {
   data: ProcessedData;
@@ -194,15 +195,15 @@ const MetricSelector: React.FC<MetricSelectorProps> = ({ data, onConfigChange })
     return labels[chart] || chart;
   };
 
-  const getTypeIcon = (type: string): string => {
-    const icons: Record<string, string> = {
-      'numeric': '🔢',
-      'text': '📝',
-      'datetime': '📅',
-      'boolean': '☑️',
-      'unknown': '❓'
+  const getTypeIcon = (type: string): React.ReactNode => {
+    const icons: Record<string, React.ReactNode> = {
+      'numeric': <Hash className="w-3 h-3" />,
+      'text': <FileText className="w-3 h-3" />,
+      'datetime': <Calendar className="w-3 h-3" />,
+      'boolean': <CheckSquare className="w-3 h-3" />,
+      'unknown': <HelpCircle className="w-3 h-3" />
     };
-    return icons[type] || '❓';
+    return icons[type] || <HelpCircle className="w-3 h-3" />;
   };
 
   const getTypeColor = (type: string): string => {
