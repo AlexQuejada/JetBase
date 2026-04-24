@@ -1,11 +1,12 @@
 import React from 'react';
 import { RowContextMenuState, ColumnContextMenuState } from '../types';
+import { Plus, Trash2, Pencil, Tag } from 'lucide-react';
 
 interface RowContextMenuProps {
   contextMenu: RowContextMenuState;
   onAddRow: (position: 'above' | 'below') => void;
   onDeleteRow: () => void;
-  onEditRowName: () => void;
+  onEditRowName: (rowIdx: number) => void;
 }
 
 export const RowContextMenu: React.FC<RowContextMenuProps> = ({
@@ -28,26 +29,26 @@ export const RowContextMenu: React.FC<RowContextMenuProps> = ({
         onClick={() => onAddRow('above')}
         className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm flex items-center gap-2"
       >
-        <span>➕</span> Insertar fila arriba
+        <Plus className="w-4 h-4" /> Insertar fila arriba
       </button>
       <button
         onClick={() => onAddRow('below')}
         className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm flex items-center gap-2"
       >
-        <span>➕</span> Insertar fila abajo
+        <Plus className="w-4 h-4" /> Insertar fila abajo
       </button>
       <button
-        onClick={onEditRowName}
+        onClick={() => onEditRowName(contextMenu.rowIdx!)}
         className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm flex items-center gap-2"
       >
-        <span>🏷️</span> Editar nombre de fila
+        <Tag className="w-4 h-4" /> Editar nombre de fila
       </button>
       <div className="border-t border-gray-100 my-1"></div>
       <button
         onClick={onDeleteRow}
         className="w-full text-left px-3 py-2 hover:bg-red-50 text-sm text-red-600 flex items-center gap-2"
       >
-        <span>🗑️</span> Eliminar fila
+        <Trash2 className="w-4 h-4" /> Eliminar fila
       </button>
     </div>
   );
@@ -57,7 +58,7 @@ interface ColumnContextMenuProps {
   columnContextMenu: ColumnContextMenuState;
   onAddColumn: (position: 'left' | 'right') => void;
   onDeleteColumn: () => void;
-  onRenameColumn: () => void;
+  onRenameColumn: (colIdx: number) => void;
 }
 
 export const ColumnContextMenu: React.FC<ColumnContextMenuProps> = ({
@@ -82,19 +83,19 @@ export const ColumnContextMenu: React.FC<ColumnContextMenuProps> = ({
         onClick={() => onAddColumn('left')}
         className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm flex items-center gap-2"
       >
-        <span>➕</span> Insertar columna izquierda
+        <Plus className="w-4 h-4" /> Insertar columna izquierda
       </button>
       <button
         onClick={() => onAddColumn('right')}
         className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm flex items-center gap-2"
       >
-        <span>➕</span> Insertar columna derecha
+        <Plus className="w-4 h-4" /> Insertar columna derecha
       </button>
       <button
-        onClick={onRenameColumn}
+        onClick={() => onRenameColumn(columnContextMenu.colIdx!)}
         className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm flex items-center gap-2"
       >
-        <span>✏️</span> Renombrar columna
+        <Pencil className="w-4 h-4" /> Renombrar columna
       </button>
       <div className="border-t border-gray-100 my-1"></div>
       <button
@@ -102,7 +103,7 @@ export const ColumnContextMenu: React.FC<ColumnContextMenuProps> = ({
         disabled={isRowNameCol}
         className="w-full text-left px-3 py-2 hover:bg-red-50 text-sm text-red-600 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <span>🗑️</span> Eliminar columna
+        <Trash2 className="w-4 h-4" /> Eliminar columna
       </button>
     </div>
   );

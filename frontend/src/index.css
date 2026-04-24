@@ -15,3 +15,38 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Botones con relieve sutil al hover */
+@layer components {
+  .btn-relief {
+    @apply transition-all duration-150;
+  }
+
+  .btn-relief:hover {
+    @apply shadow-md;
+  }
+
+  .btn-relief-transparent {
+    @apply transition-all duration-150 border border-transparent rounded-md;
+  }
+
+  .btn-relief-transparent:hover {
+    @apply bg-gray-100 shadow-sm border-gray-200;
+  }
+
+  /* Estilo global para botones - relieve sutil en hover */
+  button:not([class*="shadow"]):hover {
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+  }
+
+  /* Botones transparentes tipo "text" o "ghost" con efecto pop-out */
+  .btn-ghost:hover {
+    @apply bg-gray-100 shadow-sm;
+    transform: translateY(-1px);
+  }
+
+  /* Botones de acción pequeños (icon-only) */
+  .btn-icon:hover {
+    @apply shadow-sm bg-gray-50;
+  }
+}
