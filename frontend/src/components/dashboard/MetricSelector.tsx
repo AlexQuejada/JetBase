@@ -208,13 +208,13 @@ const MetricSelector: React.FC<MetricSelectorProps> = ({ data, onConfigChange })
 
   const getTypeColor = (type: string): string => {
     const colors: Record<string, string> = {
-      'numeric': 'bg-blue-100 text-blue-800',
-      'text': 'bg-green-100 text-green-800',
-      'datetime': 'bg-purple-100 text-purple-800',
-      'boolean': 'bg-yellow-100 text-yellow-800',
-      'unknown': 'bg-gray-100 text-gray-800'
+      'numeric': 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
+      'text': 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+      'datetime': 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
+      'boolean': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
+      'unknown': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
     };
-    return colors[type] || 'bg-gray-100 text-gray-800';
+    return colors[type] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
   };
 
   // Calcular si hay error para mostrar
@@ -222,19 +222,19 @@ const MetricSelector: React.FC<MetricSelectorProps> = ({ data, onConfigChange })
     !selectedColumnInfo.availableMetrics.includes(selectedMetric);
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-lg font-semibold mb-4">Configurar Gráfico</h3>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Configurar Gráfico</h3>
 
       <div className="space-y-4">
         {/* Selector de Columna */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             Columna a analizar
           </label>
           <select
             value={selectedColumn}
             onChange={(e) => handleColumnChange(e.target.value)}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2"
+            className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white text-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-offset-0 dark:focus:ring-blue-500 dark:focus:border-blue-500 p-2"
           >
             <option value="">Selecciona una columna</option>
             {columnsInfo.map((col) => (
@@ -245,7 +245,7 @@ const MetricSelector: React.FC<MetricSelectorProps> = ({ data, onConfigChange })
           </select>
 
           {selectedColumnInfo && (
-            <div className={`mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(selectedColumnInfo.type)}`}>
+            <div className={`mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(selectedColumnInfo.type)} dark:bg-opacity-50`}>
               {getTypeIcon(selectedColumnInfo.type)} {selectedColumnInfo.type}
             </div>
           )}
@@ -254,13 +254,13 @@ const MetricSelector: React.FC<MetricSelectorProps> = ({ data, onConfigChange })
         {/* Selector de Métrica */}
         {selectedColumnInfo && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               Métrica a calcular
             </label>
             <select
               value={selectedMetric}
               onChange={(e) => handleMetricChange(e.target.value)}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2"
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white text-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-offset-0 dark:focus:ring-blue-500 dark:focus:border-blue-500 p-2"
             >
               <option value="">Selecciona una métrica</option>
               {selectedColumnInfo.availableMetrics.map((metric) => (
@@ -271,7 +271,7 @@ const MetricSelector: React.FC<MetricSelectorProps> = ({ data, onConfigChange })
             </select>
 
             {selectedColumnInfo.availableMetrics.length > 0 && (
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Disponibles: {selectedColumnInfo.availableMetrics.map(getMetricLabel).join(', ')}
               </p>
             )}
@@ -281,13 +281,13 @@ const MetricSelector: React.FC<MetricSelectorProps> = ({ data, onConfigChange })
         {/* Agrupación opcional */}
         {selectedColumnInfo && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               Agrupar por (opcional)
             </label>
             <select
               value={groupBy}
               onChange={(e) => handleGroupByChange(e.target.value)}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2"
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white text-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-offset-0 dark:focus:ring-blue-500 dark:focus:border-blue-500 p-2"
             >
               <option value="">Sin agrupación</option>
               {columnsInfo.filter(c => c.name !== selectedColumn).map((col) => (
@@ -302,7 +302,7 @@ const MetricSelector: React.FC<MetricSelectorProps> = ({ data, onConfigChange })
         {/* Selector de Tipo de Gráfico */}
         {selectedColumnInfo && selectedMetric && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               Tipo de gráfico
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -314,7 +314,7 @@ const MetricSelector: React.FC<MetricSelectorProps> = ({ data, onConfigChange })
                   className={`px-3 py-2 rounded-md text-sm font-medium transition ${
                     selectedChart === chart
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   {getChartLabel(chart)}
@@ -327,7 +327,7 @@ const MetricSelector: React.FC<MetricSelectorProps> = ({ data, onConfigChange })
         {/* Título del gráfico */}
         {selectedColumn && selectedMetric && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               Título del gráfico
             </label>
             <input
@@ -335,14 +335,14 @@ const MetricSelector: React.FC<MetricSelectorProps> = ({ data, onConfigChange })
               value={title}
               onChange={(e) => handleTitleChange(e.target.value)}
               placeholder={`${getMetricLabel(selectedMetric)} de ${selectedColumn}`}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2"
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white text-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-offset-0 dark:focus:ring-blue-500 dark:focus:border-blue-500 p-2"
             />
           </div>
         )}
 
         {/* Mensaje de Error */}
         {hasError && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-3">
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-md p-3">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -350,10 +350,10 @@ const MetricSelector: React.FC<MetricSelectorProps> = ({ data, onConfigChange })
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-red-700">
+                <p className="text-sm text-red-700 dark:text-red-200">
                   <strong>No se puede realizar esta acción.</strong> La métrica seleccionada no es compatible con el tipo de dato.
                 </p>
-                <p className="text-xs text-red-600 mt-1">
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                   Por favor, elija una métrica válida para continuar.
                 </p>
               </div>

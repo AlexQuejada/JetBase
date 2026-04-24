@@ -4,6 +4,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import ChartRenderer from '../components/dashboard/ChartRenderer';
 import { ChartConfig } from '../components/dashboard/MetricSelector';
+import { ZoomableTable } from '../components/common/ZoomableTable';
 
 interface DashboardWidget {
   id: string;
@@ -100,16 +101,16 @@ const ReportPage: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Intelligence Report</h1>
-        <p className="text-gray-600">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Intelligence Report</h1>
+        <p className="text-gray-600 dark:text-gray-400">
           Genera un reporte profesional con tus datos y dashboard.
         </p>
       </div>
 
       {/* No Data Warning */}
       {!hasData && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-yellow-800">
+        <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+          <p className="text-yellow-800 dark:text-yellow-200">
             No hay datos disponibles. Por favor, sube y procesa archivos en la sección "Transformar" primero.
           </p>
         </div>
@@ -117,9 +118,9 @@ const ReportPage: React.FC = () => {
 
       {/* Report Configuration */}
       {hasData && (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               Título del Reporte
             </label>
             <input
@@ -127,7 +128,7 @@ const ReportPage: React.FC = () => {
               value={reportSubtitle}
               onChange={(e) => setReportSubtitle(e.target.value)}
               placeholder="Ej: Reporte de Clientes Q1 2024"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-700 dark:text-white"
             />
           </div>
 
@@ -162,34 +163,34 @@ const ReportPage: React.FC = () => {
 
       {/* Report Preview (captured for PDF) */}
       {hasData && (
-        <div ref={reportRef} className="bg-white rounded-lg shadow p-8">
+        <div ref={reportRef} className="bg-white dark:bg-gray-800 rounded-lg shadow p-8">
           {/* Report Header */}
           <div className="text-center mb-8 border-b pb-6">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">INTELLIGENCE REPORT</h2>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">INTELLIGENCE REPORT</h2>
             {reportSubtitle && (
               <p className="text-xl text-blue-600 font-medium">{reportSubtitle}</p>
             )}
-            <p className="text-gray-500 mt-2">Generado: {formatDate()}</p>
+            <p className="text-gray-500 dark:text-gray-400 mt-2">Generado: {formatDate()}</p>
           </div>
 
           {/* Data Summary */}
-          <div className="mb-8 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Resumen de Datos</h3>
+          <div className="mb-8 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Resumen de Datos</h3>
             <div className="grid grid-cols-4 gap-4 text-sm">
               <div>
-                <span className="text-gray-500">Archivo:</span>
+                <span className="text-gray-400">Archivo:</span>
                 <p className="font-medium">{processedData.filename}</p>
               </div>
               <div>
-                <span className="text-gray-500">Filas:</span>
+                <span className="text-gray-400">Filas:</span>
                 <p className="font-medium">{processedData.transformed_rows.toLocaleString()}</p>
               </div>
               <div>
-                <span className="text-gray-500">Columnas:</span>
+                <span className="text-gray-400">Columnas:</span>
                 <p className="font-medium">{getDisplayColumns().length}</p>
               </div>
               <div>
-                <span className="text-gray-500">Origen:</span>
+                <span className="text-gray-400">Origen:</span>
                 <p className="font-medium capitalize">{processedData.source || 'single'}</p>
               </div>
             </div>
@@ -197,32 +198,34 @@ const ReportPage: React.FC = () => {
 
           {/* Data Table */}
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Datos</h3>
-            <div className="overflow-x-auto border rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-100">
-                  <tr>
-                    {getDisplayColumns().map((col) => (
-                      <th key={col} className="px-4 py-3 text-left font-semibold text-gray-700 border-b">
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {getTableData().map((row, idx) => (
-                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Datos</h3>
+            <div className="border rounded-lg overflow-hidden">
+              <ZoomableTable>
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-100 dark:bg-gray-700">
+                    <tr>
                       {getDisplayColumns().map((col) => (
-                        <td key={col} className="px-4 py-2 border-b text-gray-600">
-                          {row[col] !== null && row[col] !== undefined ? String(row[col]) : '-'}
-                        </td>
+                        <th key={col} className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200 border-b">
+                          {col}
+                        </th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {getTableData().map((row, idx) => (
+                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700/50'}>
+                        {getDisplayColumns().map((col) => (
+                          <td key={col} className="px-4 py-2 border-b text-gray-600 dark:text-gray-300">
+                            {row[col] !== null && row[col] !== undefined ? String(row[col]) : '-'}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </ZoomableTable>
               {processedData.preview.length > 100 && (
-                <p className="text-sm text-gray-500 p-2 bg-gray-50">
+                <p className="text-sm text-gray-500 dark:text-gray-400 p-2 bg-gray-50 dark:bg-gray-700">
                   Mostrando 100 de {processedData.preview.length.toLocaleString()} filas
                 </p>
               )}
@@ -232,7 +235,7 @@ const ReportPage: React.FC = () => {
           {/* Dashboard Widgets */}
           {widgets.length > 0 && processedData && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Dashboard</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Dashboard</h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {widgets.map((widget) => (
                   <ChartRenderer

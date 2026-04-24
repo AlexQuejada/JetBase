@@ -1,5 +1,6 @@
 import React from 'react';
 import { PreviewData, EditingCell } from '../types';
+import { ZoomableTable } from '../../common/ZoomableTable';
 
 interface TableEditorProps {
   preview: PreviewData;
@@ -28,9 +29,9 @@ export const TableEditor: React.FC<TableEditorProps> = ({
   const visibleColumns = preview.columns.filter((c: string) => c !== '_row_name');
 
   return (
-    <div className="overflow-x-auto">
+    <ZoomableTable>
       <table className="min-w-full border text-sm">
-        <thead className="bg-gray-100">
+        <thead className="bg-gray-100 dark:bg-gray-700">
           <tr>
             {visibleColumns.map((col: string) => {
               const realColIdx = preview.columns.indexOf(col);
@@ -39,7 +40,7 @@ export const TableEditor: React.FC<TableEditorProps> = ({
                 <th
                   key={col}
                   onContextMenu={(e) => onShowColumnContextMenu(e, realColIdx, col)}
-                  className="border px-3 py-2 text-left select-none"
+                  className="border px-3 py-2 text-left select-none text-gray-700 dark:text-gray-200"
                 >
                   {isEditing ? (
                     <div className="flex items-center gap-1">
@@ -49,7 +50,7 @@ export const TableEditor: React.FC<TableEditorProps> = ({
                         onChange={(e) => onColumnNameChange(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') onSaveColumnName(); if (e.key === 'Escape') onCancelColumnName(); }}
                         autoFocus
-                        className="w-full px-1 py-0.5 border border-blue-400 rounded text-sm font-semibold"
+                        className="w-full px-1 py-0.5 border border-blue-400 rounded text-sm font-semibold dark:bg-gray-800 dark:text-white"
                       />
                       <button onClick={onSaveColumnName} className="text-green-600 hover:text-green-800 p-0.5">✓</button>
                       <button onClick={onCancelColumnName} className="text-red-600 hover:text-red-800 p-0.5">✕</button>
@@ -57,7 +58,7 @@ export const TableEditor: React.FC<TableEditorProps> = ({
                   ) : (
                     <div
                       onClick={() => onStartEditingColumnName(realColIdx)}
-                      className="cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded min-h-[24px]"
+                      className="cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/50 px-1 py-0.5 rounded min-h-[24px]"
                       title="Clic para renombrar, click derecho para opciones"
                     >
                       {col}
@@ -70,11 +71,11 @@ export const TableEditor: React.FC<TableEditorProps> = ({
         </thead>
         <tbody>
           {preview.preview?.map((row: any, rowIdx: number) => (
-            <tr key={rowIdx} className="hover:bg-gray-50" onContextMenu={(e) => onShowRowContextMenu(e, rowIdx)}>
+            <tr key={rowIdx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50" onContextMenu={(e) => onShowRowContextMenu(e, rowIdx)}>
               {visibleColumns.map((col: string) => {
                 const isEditing = editingCell?.row === rowIdx && editingCell?.col === col;
                 return (
-                  <td key={col} className="border px-2 py-1">
+                  <td key={col} className="border px-2 py-1 text-gray-600 dark:text-gray-300">
                     {isEditing ? (
                       <div className="flex items-center gap-1">
                         <input
@@ -83,7 +84,7 @@ export const TableEditor: React.FC<TableEditorProps> = ({
                           onChange={(e) => onEditValueChange(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter') onSaveEdit(); if (e.key === 'Escape') onCancelEdit(); }}
                           autoFocus
-                          className="w-full px-1 py-0.5 border border-blue-400 rounded text-sm"
+                          className="w-full px-1 py-0.5 border border-blue-400 rounded text-sm dark:bg-gray-800 dark:text-white"
                         />
                         <button onClick={onSaveEdit} className="text-green-600 hover:text-green-800 p-0.5">✓</button>
                         <button onClick={onCancelEdit} className="text-red-600 hover:text-red-800 p-0.5">✕</button>
@@ -91,7 +92,7 @@ export const TableEditor: React.FC<TableEditorProps> = ({
                     ) : (
                       <div
                         onClick={() => onStartEditing(rowIdx, col, row[col])}
-                        className="cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded min-h-[24px]"
+                        className="cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/50 px-1 py-0.5 rounded min-h-[24px]"
                       >
                         {row[col]}
                       </div>
@@ -103,6 +104,6 @@ export const TableEditor: React.FC<TableEditorProps> = ({
           ))}
         </tbody>
       </table>
-    </div>
+    </ZoomableTable>
   );
 };

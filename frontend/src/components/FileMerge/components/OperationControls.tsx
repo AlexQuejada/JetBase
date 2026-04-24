@@ -25,11 +25,11 @@ export const OperationControls: React.FC<OperationControlsProps> = ({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700">Operación</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Operación</label>
         <select
           value={operation}
           onChange={(e) => onOperationChange(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white text-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-offset-0 dark:focus:ring-blue-500 dark:focus:border-blue-500 px-2 py-1.5"
         >
           <option value="clean">Solo limpiar (normalizar)</option>
           <option value="dropna">Eliminar nulos</option>
@@ -40,13 +40,13 @@ export const OperationControls: React.FC<OperationControlsProps> = ({
 
       {operation === 'fillna' && (
         <div>
-          <label className="block text-sm font-medium text-gray-700">Valor para rellenar</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Valor para rellenar</label>
           <input
             type="text"
             value={fillValue}
             onChange={(e) => onFillValueChange(e.target.value)}
             placeholder="Ej: DESCONOCIDO"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white text-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-offset-0 dark:focus:ring-blue-500 dark:focus:border-blue-500 px-2 py-1.5"
           />
         </div>
       )}
@@ -54,21 +54,21 @@ export const OperationControls: React.FC<OperationControlsProps> = ({
       {operation === 'drop_duplicates' && (
         <>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Columnas clave (separadas por coma)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Columnas clave (separadas por coma)</label>
             <input
               type="text"
               value={keyColumns}
               onChange={(e) => onKeyColumnsChange(e.target.value)}
               placeholder="Ej: email,cliente_id"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white text-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-offset-0 dark:focus:ring-blue-500 dark:focus:border-blue-500 px-2 py-1.5"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Conservar</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Conservar</label>
             <select
               value={keep}
               onChange={(e) => onKeepChange(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white text-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-offset-0 dark:focus:ring-blue-500 dark:focus:border-blue-500 px-2 py-1.5"
             >
               <option value="first">Primera ocurrencia</option>
               <option value="last">Última ocurrencia</option>
@@ -101,27 +101,27 @@ export const NormalizationOptions: React.FC<NormalizationOptionsProps> = ({
           type="checkbox"
           checked={!caseSensitive}
           onChange={(e) => onCaseSensitiveChange(!e.target.checked)}
-          className="rounded border-gray-300"
+          className="rounded border-gray-300 dark:border-gray-600"
         />
-        <span className="text-sm">Ignorar mayúsculas/minúsculas</span>
+        <span className="text-sm text-gray-700 dark:text-gray-200">Ignorar mayúsculas/minúsculas</span>
       </label>
       <label className="flex items-center gap-2">
         <input
           type="checkbox"
           checked={normalizeAccents}
           onChange={(e) => onNormalizeAccentsChange(e.target.checked)}
-          className="rounded border-gray-300"
+          className="rounded border-gray-300 dark:border-gray-600"
         />
-        <span className="text-sm">Normalizar acentos (é → e)</span>
+        <span className="text-sm text-gray-700 dark:text-gray-200">Normalizar acentos (é → e)</span>
       </label>
       <label className="flex items-center gap-2">
         <input
           type="checkbox"
           checked={normalizeWhitespace}
           onChange={(e) => onNormalizeWhitespaceChange(e.target.checked)}
-          className="rounded border-gray-300"
+          className="rounded border-gray-300 dark:border-gray-600"
         />
-        <span className="text-sm">Normalizar espacios</span>
+        <span className="text-sm text-gray-700 dark:text-gray-200">Normalizar espacios</span>
       </label>
     </div>
   );
