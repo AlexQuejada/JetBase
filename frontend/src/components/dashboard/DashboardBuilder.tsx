@@ -125,9 +125,9 @@ const DashboardBuilder: React.FC = () => {
   const hasData = processedData && processedData.preview && processedData.preview.length > 0;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">Dashboard Builder</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Dashboard Builder</h2>
         <div className="flex gap-2">
           {hasData && (
             <button
@@ -167,17 +167,17 @@ const DashboardBuilder: React.FC = () => {
 
       {/* Info de datos procesados */}
       {hasData && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-green-800">
+              <p className="text-sm text-green-800 dark:text-green-200">
                 <CheckCircle2 className="w-4 h-4 inline mr-1" /> Datos listos para visualizar
               </p>
-              <p className="text-xs text-green-600 mt-1">
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
                 {processedData.transformed_rows.toLocaleString()} filas · {processedData.columns.length} columnas
               </p>
             </div>
-            <div className="text-right text-xs text-green-600">
+            <div className="text-right text-xs text-green-600 dark:text-green-400">
               <p>Original: {processedData.original_rows.toLocaleString()} filas</p>
             </div>
           </div>
@@ -186,11 +186,11 @@ const DashboardBuilder: React.FC = () => {
 
       {/* Mensaje cuando no hay datos pero hay widgets guardados */}
       {!hasData && widgets.length > 0 && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+          <p className="text-sm text-blue-800 dark:text-blue-200">
             <BarChart3 className="w-4 h-4 inline mr-1" /> Tienes {widgets.length} gráficos guardados
           </p>
-          <p className="text-xs text-blue-600 mt-1">
+          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
             Sube datos compatibles para ver los gráficos realescharts.
           </p>
         </div>
@@ -221,7 +221,7 @@ const DashboardBuilder: React.FC = () => {
           {/* Vista Previa del Gráfico Actual */}
           {currentConfig && (
             <div className="mb-8">
-              <h3 className="text-lg font-medium mb-3">Vista Previa</h3>
+              <h3 className="text-lg font-medium mb-3 text-gray-900 dark:text-white">Vista Previa</h3>
               <ChartRenderer
                 data={processedData}
                 config={currentConfig}
@@ -233,13 +233,13 @@ const DashboardBuilder: React.FC = () => {
 
       {/* Estado sin datos y sin widgets */}
       {!hasData && widgets.length === 0 && (
-        <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
+        <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
           <LayoutDashboard className="w-10 h-10 mx-auto mb-4 text-gray-400" />
           <p className="text-lg mb-2">No hay datos procesados</p>
           <p className="text-sm">
             Primero procesa tus archivos en la sección <strong>"Transformar"</strong>.
           </p>
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
             El dashboard usará automáticamente los datos limpios y unificados.
           </p>
         </div>
@@ -247,8 +247,8 @@ const DashboardBuilder: React.FC = () => {
 
       {/* Dashboard con Widgets Guardados */}
       {widgets.length > 0 && (
-        <div className="border-t pt-6">
-          <h3 className="text-lg font-medium mb-4">Mi Dashboard ({widgets.length} gráficos)</h3>
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+          <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-white">Mi Dashboard ({widgets.length} gráficos)</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {widgets.map((widget) => (
               <div key={widget.id} className="relative group" ref={(el) => { widgetRefs.current[widget.id] = el; }}>
@@ -258,9 +258,9 @@ const DashboardBuilder: React.FC = () => {
                     config={widget.config}
                   />
                 ) : (
-                  <div className="bg-gray-100 rounded-lg p-6 border h-64 flex flex-col items-center justify-center">
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-6 border h-64 flex flex-col items-center justify-center">
                     <BarChart3 className="w-10 h-10 mb-2 text-gray-400" />
-                    <p className="font-medium text-gray-600">{widget.config.title || 'Widget'}</p>
+                    <p className="font-medium text-gray-600 dark:text-gray-300">{widget.config.title || 'Widget'}</p>
                     <p className="text-sm text-gray-400 mt-1">
                       {widget.config.chartType} - {widget.config.metric} ({widget.config.column})
                     </p>
@@ -295,7 +295,7 @@ const DashboardBuilder: React.FC = () => {
 
       {/* Estado vacío con datos disponibles */}
       {hasData && widgets.length === 0 && (
-        <div className="text-center py-8 text-gray-400 border-t">
+        <div className="text-center py-8 text-gray-400 dark:text-gray-500 border-t border-gray-200 dark:border-gray-700">
           <p>Configura tu primer gráfico arriba para empezar</p>
         </div>
       )}

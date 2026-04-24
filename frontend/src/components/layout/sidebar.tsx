@@ -52,14 +52,14 @@ const Sidebar: React.FC<{ collapsed?: boolean; onCollapsedChange?: (collapsed: b
     return (
         <div className={`relative flex-shrink-0 transition-all duration-500 ease-in-out ${collapsed ? 'w-16' : 'w-64'}`}>
             {/* Background que se desvanece suavemente */}
-            <div className={`absolute inset-0 bg-gray-900 transition-opacity duration-500 ease-in-out pointer-events-none ${collapsed ? 'opacity-0' : 'opacity-100'}`} />
+            <div className={`absolute inset-0 bg-gray-900 dark:bg-gray-950 transition-opacity duration-500 ease-in-out pointer-events-none ${collapsed ? 'opacity-0' : 'opacity-100'}`} />
             {/* Contenido */}
             <div className="relative z-10 flex h-full flex-col px-3 py-4 overflow-hidden">
 
             {/* Botón colapsar */}
             <button
                 onClick={toggleCollapse}
-                className={`flex items-center justify-center w-8 h-8 mb-4 mx-auto rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-300 ${collapsed ? '' : 'hover:scale-110'}`}
+                className={`flex items-center justify-center w-8 h-8 mb-4 mx-auto rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 dark:hover:bg-gray-700 transition-all duration-300 ${collapsed ? '' : 'hover:scale-110'}`}
                 title={collapsed ? 'Expandir' : 'Colapsar'}
             >
                 <svg className={`w-5 h-5 transition-transform duration-500 ease-in-out ${collapsed ? 'rotate-[540deg]' : ''}`} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
@@ -68,21 +68,21 @@ const Sidebar: React.FC<{ collapsed?: boolean; onCollapsedChange?: (collapsed: b
             </button>
 
             {/* Main nav */}
-            <nav className="flex flex-col gap-0.5 transition-all duration-300 ease-out">
+            <nav className="flex flex-col gap-0.5">
                 {navigation.map((item) => {
                     const isActive = location.pathname === item.href;
                     return (
                         <Link
                             key={item.name}
                             to={item.href}
-                            className={`flex items-center rounded-lg px-2.5 py-2 text-sm transition-all duration-300 ease-out ${isActive
-                                ? "bg-gray-800 text-white font-medium shadow-sm"
-                                : "text-gray-400 hover:bg-gray-800 hover:text-gray-100 hover:shadow-md"
-                                } ${collapsed ? 'justify-center' : 'gap-2.5'}`}>
+                            className={`flex items-center rounded-lg px-2.5 py-2 text-sm transition-all duration-500 ease-in-out ${isActive
+                                ? "bg-gray-800 dark:bg-gray-700 text-white font-medium shadow-sm"
+                                : "text-gray-400 hover:bg-gray-800 dark:hover:bg-gray-700 hover:text-gray-100"
+                                } gap-2.5`}>
                             <span className={`transition-transform duration-500 ease-in-out ${collapsed ? 'rotate-[360deg]' : ''}`}>
                                 {item.icon}
                             </span>
-                            <span className={`whitespace-nowrap overflow-hidden transition-all duration-300 ease-out ${collapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
+                            <span className={`whitespace-nowrap overflow-hidden transition-all duration-500 ease-in-out ${collapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
                                 {item.name}
                             </span>
                         </Link>

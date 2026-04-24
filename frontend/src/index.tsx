@@ -4,15 +4,22 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { DataProvider } from './context/DataContext';
+import { ThemeProvider } from './context/ThemeContext';
+
+const savedTheme = localStorage.getItem('theme');
+const initialDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+if (initialDark) document.documentElement.classList.add('dark');
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
   <React.StrictMode>
-    <DataProvider>
-      <App />
-    </DataProvider>
+    <ThemeProvider>
+      <DataProvider>
+        <App />
+      </DataProvider>
+    </ThemeProvider>
   </React.StrictMode>
 );
 

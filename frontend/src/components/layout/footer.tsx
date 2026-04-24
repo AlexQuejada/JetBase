@@ -4,11 +4,11 @@ const Footer: React.FC = () => {
     const currentYear = new Date().getFullYear();
 
     return (
-        <footer className="bg-gray-900 text-white px-6 py-4 shadow-md flex-shrink-0">
+        <footer className="bg-gray-900 dark:bg-gray-950 text-white px-6 py-4 shadow-md flex-shrink-0">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-2 text-sm text-gray-500">
                 {/* Izquierda - Copyright */}
                 <div className="flex items-center gap-2">
-                    <span>© {currentYear} Flintrex</span>
+                    <span>© {currentYear} Flintrex(BETA)</span>
                     <span className="hidden sm:inline">•</span>
                     <span className="text-xs">Desarrollado por</span>
                     <a
@@ -24,7 +24,7 @@ const Footer: React.FC = () => {
                         href="https://github.com/AlexQuejada"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-gray-500 hover:text-gray-700"
+                        className="text-xs text-gray-500 hover:text-gray-400"
                     >
                         <i className="fab fa-github"></i>
                         GitHub
