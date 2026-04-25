@@ -3,18 +3,14 @@
         {
             "name": "backend",
             "rootDir": "backend",
-            "builder": "NIXPACKS",
             "buildCommand": "pip install -r requirements.txt",
-            "startCommand": "uvicorn main:app --host 0.0.0.0 --port $PORT",
-            "healthcheckPath": "/docs"
+            "startCommand": "uvicorn main:app --host 0.0.0.0 --port $PORT"
         },
         {
             "name": "frontend",
             "rootDir": "frontend",
-            "builder": "NIXPACKS",
             "buildCommand": "npm install --legacy-peer-deps && npm run build",
-            "startCommand": "npx serve -s build -l $PORT",
-            "port": 3000
+            "startCommand": "npx serve -s build -l $PORT"
         }
     ]
 }
