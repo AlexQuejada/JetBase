@@ -5,6 +5,15 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
   transition: background-color 300ms ease-in-out, color 300ms ease-in-out;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+}
+
+.navbar,
+.light .navbar {
+  background-color: #111827;
 }
 
 .dark .navbar {

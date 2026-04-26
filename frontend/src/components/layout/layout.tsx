@@ -18,9 +18,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     return (
-        <div className="h-screen flex flex-col">
+        <div className="h-screen flex flex-col overflow-hidden">
             <Navbar collapsed={sidebarCollapsed} />
-            <div className="flex flex-1 overflow-visible">
+            <div className="flex flex-1 overflow-hidden">
                 <Sidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
                 <main className="flex-1 p-6 bg-gray-50 dark:bg-gray-900 overflow-auto">
                     {children}

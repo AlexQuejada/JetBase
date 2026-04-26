@@ -1,5 +1,6 @@
 .sidebar-container {
-  position: relative;
+  position: sticky;
+  top: 70px;
   flex-shrink: 0;
   width: 256px;
   transition: width 500ms ease-in-out;
