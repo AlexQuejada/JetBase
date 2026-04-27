@@ -18,6 +18,8 @@ interface TableEditorProps {
   onCancelColumnName: () => void;
   onShowRowContextMenu: (e: React.MouseEvent, rowIdx: number) => void;
   onShowColumnContextMenu: (e: React.MouseEvent, colIdx: number, colName: string) => void;
+  tableZoom?: number;
+  onTableZoomChange?: (zoom: number) => void;
 }
 
 export const TableEditor: React.FC<TableEditorProps> = ({
@@ -36,11 +38,16 @@ export const TableEditor: React.FC<TableEditorProps> = ({
   onCancelColumnName,
   onShowRowContextMenu,
   onShowColumnContextMenu,
+  tableZoom,
+  onTableZoomChange,
 }) => {
   const visibleColumns = localPreview.columns.filter((c: string) => c !== '_row_name');
 
   return (
-    <ZoomableTable>
+    <ZoomableTable
+      externalScale={tableZoom}
+      onScaleChange={onTableZoomChange}
+    >
       <table className="min-w-full border text-sm">
         <thead className="bg-gray-100 dark:bg-gray-700">
           <tr>

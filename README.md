@@ -48,9 +48,9 @@ Flintrex/
 ## 🚀 Estado del proyecto
 
 🟢 **Fase 1 - Base y configuración** (completada)  
-🟡 **Fase 2 - Endpoints y procesamiento con pandas** (en curso)  
-⚪ **Fase 3 - Frontend y dashboards** (próxima)  
-⚪ **Fase 4 - Base de datos y usuarios** (futuro)  
+🟢 **Fase 2 - Endpoints y procesamiento con pandas** (completada)  
+🟢 **Fase 3 - Frontend y dashboards** (completada)  
+⚪ **Fase 4 - deploy y usuarios** (en proceso)  
 
 ---
 

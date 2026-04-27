@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useData, ProcessedData } from '../context/DataContext';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import ChartRenderer from '../components/dashboard/ChartRenderer';
 import { ChartConfig } from '../components/dashboard/MetricSelector';
 import { ZoomableTable } from '../components/common/ZoomableTable';
+import { generateReportPdf } from '../utils/pdfExporter';
 
 interface DashboardWidget {
   id: string;
@@ -14,6 +13,7 @@ interface DashboardWidget {
 
 const STORAGE_KEY_WIDGETS = 'flintrex_dashboard_widgets';
 const STORAGE_KEY_DATA = 'flintrex_processed_data';
+const ZOOM_STORAGE_KEY = 'flintrex_table_zoom';
 
 const ReportPage: React.FC = () => {
   const { t } = useTranslation();
@@ -22,17 +22,22 @@ const ReportPage: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [processedData, setProcessedData] = useState<ProcessedData | null>(null);
   const [widgets, setWidgets] = useState<DashboardWidget[]>([]);
+  const [tableZoom, setTableZoom] = useState(() => {
+    try {
+      const stored = localStorage.getItem(ZOOM_STORAGE_KEY);
+      return stored ? parseFloat(stored) : 1;
+    } catch {
+      return 1;
+    }
+  });
   const reportRef = useRef<HTMLDivElement>(null);
 
-  // Load data and widgets from localStorage on mount
   useEffect(() => {
     try {
-      // Load processed data
       const storedData = localStorage.getItem(STORAGE_KEY_DATA);
       if (storedData) {
         setProcessedData(JSON.parse(storedData));
       }
-      // Load widgets
       const storedWidgets = localStorage.getItem(STORAGE_KEY_WIDGETS);
       if (storedWidgets) {
         setWidgets(JSON.parse(storedWidgets));
@@ -47,26 +52,11 @@ const ReportPage: React.FC = () => {
 
     setIsExporting(true);
     try {
-      const element = reportRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-
       const filename = reportSubtitle
         ? `Intelligence_Report_${reportSubtitle.replace(/\s+/g, '_')}.pdf`
         : 'Intelligence_Report.pdf';
 
-      pdf.save(filename);
+      await generateReportPdf(reportRef.current, filename);
     } catch (error) {
       console.error('Error exporting PDF:', error);
       alert('Error exporting PDF. Please try again.');
@@ -85,13 +75,11 @@ const ReportPage: React.FC = () => {
     });
   };
 
-  // Get table data (max 100 rows) - filter out _row_name
   const getTableData = () => {
     if (!processedData?.preview) return [];
     return processedData.preview.slice(0, 100);
   };
 
-  // Get columns for display (filter out _row_name)
   const getDisplayColumns = () => {
     if (!processedData?.columns) return [];
     return processedData.columns.filter(col => col !== '_row_name');
@@ -101,7 +89,6 @@ const ReportPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('pages.report.title')}</h1>
         <p className="text-gray-600 dark:text-gray-400">
@@ -109,7 +96,6 @@ const ReportPage: React.FC = () => {
         </p>
       </div>
 
-      {/* No Data Warning */}
       {!hasData && (
         <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
           <p className="text-yellow-800 dark:text-yellow-200">
@@ -118,7 +104,6 @@ const ReportPage: React.FC = () => {
         </div>
       )}
 
-      {/* Report Configuration */}
       {hasData && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div className="mb-4">
@@ -163,10 +148,8 @@ const ReportPage: React.FC = () => {
         </div>
       )}
 
-      {/* Report Preview (captured for PDF) */}
       {hasData && (
         <div ref={reportRef} className="bg-white dark:bg-gray-800 rounded-lg shadow p-8">
-          {/* Report Header */}
           <div className="text-center mb-8 border-b pb-6">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">INTELLIGENCE REPORT</h2>
             {reportSubtitle && (
@@ -175,7 +158,6 @@ const ReportPage: React.FC = () => {
             <p className="text-gray-500 dark:text-gray-400 mt-2">{t('pages.report.generated')}: {formatDate()}</p>
           </div>
 
-          {/* Data Summary */}
           <div className="mb-8 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('pages.report.dataSummary')}</h3>
             <div className="grid grid-cols-4 gap-4 text-sm">
@@ -198,11 +180,13 @@ const ReportPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Data Table */}
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('pages.report.data')}</h3>
             <div className="border rounded-lg overflow-hidden">
-              <ZoomableTable>
+              <ZoomableTable
+                externalScale={tableZoom}
+                onScaleChange={setTableZoom}
+              >
                 <table className="w-full text-sm">
                   <thead className="bg-gray-100 dark:bg-gray-700">
                     <tr>
@@ -234,7 +218,6 @@ const ReportPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Dashboard Widgets */}
           {widgets.length > 0 && processedData && (
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('pages.report.dashboardSection')}</h3>

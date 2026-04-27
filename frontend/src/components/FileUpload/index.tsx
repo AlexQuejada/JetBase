@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFileUpload } from './hooks/useFileUpload';
 import { TableEditor } from './components/TableEditor';
 import { RowContextMenu, ColumnContextMenu } from './components/ContextMenus';
 import { Lightbulb } from 'lucide-react';
+
+const ZOOM_STORAGE_KEY = 'flintrex_table_zoom';
 
 const FileUpload: React.FC = () => {
   const { t } = useTranslation();
@@ -40,6 +42,15 @@ const FileUpload: React.FC = () => {
     saveChangesToContext,
     clearData,
   } = useFileUpload();
+
+  const [tableZoom, setTableZoom] = useState(() => {
+    try {
+      const stored = localStorage.getItem(ZOOM_STORAGE_KEY);
+      return stored ? parseFloat(stored) : 1;
+    } catch {
+      return 1;
+    }
+  });
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
@@ -123,6 +134,8 @@ const FileUpload: React.FC = () => {
             onCancelColumnName={cancelColumnNameEdit}
             onShowRowContextMenu={showContextMenu}
             onShowColumnContextMenu={showColumnContextMenu}
+            tableZoom={tableZoom}
+            onTableZoomChange={setTableZoom}
           />
 
           <RowContextMenu

@@ -2,11 +2,15 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 
+const ZOOM_STORAGE_KEY = 'flintrex_table_zoom';
+
 interface ZoomableTableProps {
   children: React.ReactNode;
   minScale?: number;
   maxScale?: number;
   step?: number;
+  externalScale?: number;
+  onScaleChange?: (scale: number) => void;
 }
 
 export const ZoomableTable: React.FC<ZoomableTableProps> = ({
@@ -14,11 +18,24 @@ export const ZoomableTable: React.FC<ZoomableTableProps> = ({
   minScale = 0.5,
   maxScale = 1.5,
   step = 0.1,
+  externalScale,
+  onScaleChange,
 }) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
+
+  // Load initial scale from localStorage or use external, default to 1
+  const [internalScale, setInternalScale] = useState(() => {
+    try {
+      const stored = localStorage.getItem(ZOOM_STORAGE_KEY);
+      return stored ? parseFloat(stored) : 1;
+    } catch {
+      return 1;
+    }
+  });
   const [hasOverflow, setHasOverflow] = useState(false);
+
+  const scale = externalScale !== undefined ? externalScale : internalScale;
 
   useEffect(() => {
     const checkOverflow = () => {
@@ -35,20 +52,44 @@ export const ZoomableTable: React.FC<ZoomableTableProps> = ({
     return () => window.removeEventListener('resize', checkOverflow);
   }, [children]);
 
+  // Persist scale to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(ZOOM_STORAGE_KEY, scale.toString());
+    } catch {
+      // Ignore storage errors
+    }
+    onScaleChange?.(scale);
+  }, [scale, onScaleChange]);
+
   const handleZoomIn = () => {
-    setScale((prev) => Math.min(prev + step, maxScale));
+    const newScale = Math.min(scale + step, maxScale);
+    if (externalScale !== undefined) {
+      onScaleChange?.(newScale);
+    } else {
+      setInternalScale(newScale);
+    }
   };
 
   const handleZoomOut = () => {
-    setScale((prev) => Math.max(prev - step, minScale));
+    const newScale = Math.max(scale - step, minScale);
+    if (externalScale !== undefined) {
+      onScaleChange?.(newScale);
+    } else {
+      setInternalScale(newScale);
+    }
   };
 
   const handleReset = () => {
-    setScale(1);
+    if (externalScale !== undefined) {
+      onScaleChange?.(1);
+    } else {
+      setInternalScale(1);
+    }
   };
 
   return (
-    <div className="relative">
+    <div className="relative" id="zoomable-table-container">
       {/* Controles de zoom - solo visibles cuando hay overflow horizontal */}
       {hasOverflow && (
         <div className="absolute -top-10 right-2 z-10 flex gap-1 bg-white dark:bg-gray-700 rounded-lg shadow-md p-1">
