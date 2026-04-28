@@ -17,7 +17,7 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000","https://genuine-hope-production-5fab.up.railway.app"],
+    allow_origins=["http://localhost:3000","https://https://flintrex.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
