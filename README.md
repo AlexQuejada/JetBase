@@ -19,30 +19,49 @@ Procesos manuales lentos y propensos a errores
 Flintrex automatiza este proceso, permitiendo:
 
 Unificar múltiples archivos
+
 Limpiar y normalizar datos
+
 Detectar inconsistencias
+
 Generar métricas y visualizaciones
 
 ✨ Características principales
 Carga múltiple de archivos (CSV, Excel)
+
 Detección automática de estructura
+
 Unificación inteligente de columnas (ej: name, full_name, nombre)
+
 Eliminación y manejo de duplicados
+
 Gestión de valores nulos (drop/fill)
+
 Edición directa de datos (inline)
+
 Dashboard interactivo en tiempo real
+
 Exportación a CSV, Excel, JSON y PDF
+
 Procesamiento robusto de archivos corruptos
+
 Trazabilidad por archivo de origen
 
 Stack tecnológico
 Capa	Tecnología
+
 Backend API	Python + FastAPI
+
 Procesamiento de datos	Pandas, NumPy
+
 Frontend	React + TypeScript + TailwindCSS
+
 Base de datos	PostgreSQL
+
 Infraestructura	Docker + Railway
+
 Seguridad	Rate limiting, validación de archivos
+
 Control de versiones	Git + GitHub
 
 📁 Estructura del proyecto
@@ -110,15 +129,22 @@ http://localhost:8000/docs
 
 Consideraciones
 Límite de tamaño de archivos para estabilidad
+
 Validación de archivos corruptos o inválidos
+
 Procesamiento optimizado para datasets grandes
+
 Sistema preparado para escalabilidad futura
 
 Roadmap
 Autenticación de usuarios
+
 Persistencia de proyectos
+
 Integraciones (Google Drive, APIs externas)
+
 Streaming para archivos grandes
+
 Mejora de visualizaciones avanzadas
 
 Autor
